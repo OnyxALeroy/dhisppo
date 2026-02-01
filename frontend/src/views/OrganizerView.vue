@@ -448,6 +448,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useEventStore } from '@/stores/events';
 import type { Event, Participant } from '@/types';
@@ -455,6 +456,7 @@ import { eventsAPI } from '@/utils/api';
 
 const authStore = useAuthStore();
 const eventStore = useEventStore();
+const router = useRouter();
 
 // View state
 const selectedEvent = ref<Event | null>(null);
@@ -551,7 +553,7 @@ const hasActiveFilters = computed(() => {
 
 // Methods
 const selectEvent = (event: Event) => {
-  selectedEvent.value = event;
+  router.push(`/event/${event.id}`);
 };
 
 const clearFilters = () => {
@@ -584,14 +586,7 @@ const getPaymentStatusClass = (participant: Participant) => {
 
 // Event management
 const editEvent = (event: Event) => {
-  Object.assign(eventForm, {
-    ...event,
-    locations: [...event.locations],
-    notes: [...event.notes],
-    images: [...event.images]
-  });
-  eventNotesInput.value = event.notes.join('\n');
-  showEditModal.value = true;
+  router.push(`/event/${event.id}`);
 };
 
 const deleteEvent = async (eventId: string) => {
