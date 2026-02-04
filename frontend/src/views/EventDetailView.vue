@@ -537,7 +537,7 @@
             <label for="paymentAmount">Amount</label>
             <input 
               id="paymentAmount"
-              v-model.number="paymentForm.amount" 
+              v-model.number="paymentCreateForm.amount" 
               type="number" 
               step="0.01"
               min="0"
@@ -550,7 +550,7 @@
             <label for="paymentTitle">Title/Description</label>
             <input 
               id="paymentTitle"
-              v-model="paymentForm.title" 
+              v-model="paymentCreateForm.title" 
               type="text" 
               required
               class="form-input"
