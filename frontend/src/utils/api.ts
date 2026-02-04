@@ -8,6 +8,9 @@ import type {
   EventCreate,
   EventUpdate,
   Participant,
+  Payment,
+  PaymentCreate,
+  PaymentUpdate,
 } from "@/types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -85,6 +88,29 @@ export const eventsAPI = {
         params: { paid_amount: paidAmount },
       })
       .then((res) => res.data),
+};
+
+export const paymentsAPI = {
+  createPayment: (eventId: string, payment: PaymentCreate): Promise<Payment> =>
+    api.post(`/payments/events/${eventId}/payments`, payment).then((res) => res.data),
+
+  getEventPayments: (eventId: string): Promise<Payment[]> =>
+    api.get(`/payments/events/${eventId}/payments`).then((res) => res.data),
+
+  getPayment: (eventId: string, paymentId: string): Promise<Payment> =>
+    api.get(`/payments/events/${eventId}/payments/${paymentId}`).then((res) => res.data),
+
+  updatePayment: (eventId: string, paymentId: string, payment: PaymentUpdate): Promise<Payment> =>
+    api.patch(`/payments/events/${eventId}/payments/${paymentId}`, payment).then((res) => res.data),
+
+  deletePayment: (eventId: string, paymentId: string): Promise<void> =>
+    api.delete(`/payments/events/${eventId}/payments/${paymentId}`).then((res) => res.data),
+
+  getUserPayments: (userId: string): Promise<Payment[]> =>
+    api.get(`/payments/user/${userId}/payments`).then((res) => res.data),
+
+  getMyPayments: (): Promise<Payment[]> =>
+    api.get(`/payments/my/payments`).then((res) => res.data),
 };
 
 export default api;

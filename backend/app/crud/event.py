@@ -18,6 +18,12 @@ class EventCRUD:
         # This fixes the "bson.errors.InvalidDocument" error
         event_dict = jsonable_encoder(event_data)
         
+        # Ensure payments and participants arrays exist
+        if "payments" not in event_dict:
+            event_dict["payments"] = []
+        if "participants" not in event_dict:
+            event_dict["participants"] = []
+        
         # Add timestamps as real datetime objects (MongoDB handles these fine)
         event_dict["created_at"] = datetime.utcnow()
         event_dict["updated_at"] = datetime.utcnow()
@@ -32,6 +38,10 @@ class EventCRUD:
         event = await database[self.collection_name].find_one(
             {"_id": ObjectId(event_id)}
         )
+        if event and "payments" not in event:
+            event["payments"] = []
+        if event and "participants" not in event:
+            event["participants"] = []
         return event
 
     async def get_events(self, skip: int = 0, limit: int = 100) -> List[dict]:
@@ -43,6 +53,11 @@ class EventCRUD:
             .limit(limit)
             .to_list(length=limit)
         )
+        for event in events:
+            if "payments" not in event:
+                event["payments"] = []
+            if "participants" not in event:
+                event["participants"] = []
         return events
 
     async def get_events_by_organizer(
@@ -56,6 +71,11 @@ class EventCRUD:
             .limit(limit)
             .to_list(length=limit)
         )
+        for event in events:
+            if "payments" not in event:
+                event["payments"] = []
+            if "participants" not in event:
+                event["participants"] = []
         return events
 
     async def get_events_by_location(
@@ -69,6 +89,11 @@ class EventCRUD:
             .limit(limit)
             .to_list(length=limit)
         )
+        for event in events:
+            if "payments" not in event:
+                event["payments"] = []
+            if "participants" not in event:
+                event["participants"] = []
         return events
 
     async def update_event(

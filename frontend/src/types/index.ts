@@ -50,6 +50,7 @@ export interface Event {
   images: string[];
   notes: string[];
   participants: Participant[];
+  payments: Payment[];
   created_at: string;
   updated_at?: string;
 }
@@ -66,6 +67,7 @@ export interface EventCreate {
   images?: string[];
   notes?: string[];
   participants?: Participant[];
+  payments?: Payment[];
 }
 
 export interface EventUpdate {
@@ -80,4 +82,32 @@ export interface EventUpdate {
   images?: string[];
   notes?: string[];
   participants?: Participant[];
+  payments?: Payment[];
+}
+
+export interface UserInfo {
+  id: string;
+  username: string;
+  email?: string;
+}
+
+export interface Payment {
+  id: string;
+  sender: UserInfo;
+  receiver: UserInfo;
+  amount: number;
+  title: string;
+  created_at: string;
+}
+
+export interface PaymentCreate {
+  sender: UserInfo;
+  receiver: UserInfo;
+  amount: number;
+  title: string;
+}
+
+export interface PaymentUpdate {
+  amount?: number;
+  title?: string;
 }

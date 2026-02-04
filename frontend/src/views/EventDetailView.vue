@@ -259,7 +259,7 @@
       <!-- Participants Section (always visible) -->
       <div class="participants-section">
         <div class="participants-header">
-          <h3>👥 Participants ({{ event.participants.length }})</h3>
+          <h3>👥 Participants ({{ (event.participants || []).length }})</h3>
           <button 
             class="btn-primary"
             @click="showAddParticipant = true"
@@ -268,7 +268,7 @@
           </button>
         </div>
 
-        <div v-if="event.participants.length === 0" class="empty-participants">
+        <div v-if="!event.participants || event.participants.length === 0" class="empty-participants">
           <p>No participants yet</p>
         </div>
 
@@ -318,6 +318,71 @@
                 @click="openPaymentModal(participant)"
               >
                 Update Payment
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payments Section (always visible) -->
+      <div class="payments-section">
+        <div class="payments-header">
+          <h3>💳 Payments ({{ (event.payments || []).length }})</h3>
+          <button 
+            class="btn-primary"
+            @click="showAddPayment = true"
+          >
+            Add Payment
+          </button>
+        </div>
+
+        <div v-if="!event.payments || event.payments.length === 0" class="empty-payments">
+          <p>No payments yet</p>
+        </div>
+
+        <div v-else class="payments-grid">
+          <div 
+            v-for="payment in event.payments" 
+            :key="payment.id"
+            class="payment-card"
+          >
+            <div class="payment-header">
+              <h4>{{ payment.title }}</h4>
+              <button 
+                class="btn-danger btn-small"
+                @click="confirmDeletePayment(payment)"
+              >
+                Delete
+              </button>
+            </div>
+            
+            <div class="payment-body">
+              <div class="payment-amount">
+                <span class="amount-label">Amount:</span>
+                <span class="amount-value">${{ payment.amount.toFixed(2) }}</span>
+              </div>
+              
+              <div class="payment-participants">
+                <div class="payment-participant">
+                  <span class="participant-label">From:</span>
+                  <span class="participant-name">{{ payment.sender.username }}</span>
+                </div>
+                <div class="payment-participant">
+                  <span class="participant-label">To:</span>
+                  <span class="participant-name">{{ payment.receiver.username }}</span>
+                </div>
+              </div>
+              
+              <div class="payment-date">
+                <span class="date-label">Date:</span>
+                <span class="date-value">{{ formatDate(payment.created_at) }}</span>
+              </div>
+              
+              <button 
+                class="btn-secondary btn-small btn-full"
+                @click="openEditPaymentModal(payment)"
+              >
+                Edit Payment
               </button>
             </div>
           </div>
@@ -409,6 +474,146 @@
       </div>
     </div>
 
+    <!-- Add Payment Modal -->
+    <div v-if="showAddPayment" class="modal-overlay" @click="closeAddPayment">
+      <div class="modal" @click.stop>
+        <h3>Add Payment</h3>
+        <form @submit.prevent="addPayment">
+          <div class="form-group">
+            <label for="paymentSender">Sender</label>
+            <div class="select-with-search">
+              <input 
+                id="paymentSender"
+                v-model="senderSearch" 
+                type="text" 
+                placeholder="Search sender..."
+                class="form-input search-input"
+                @focus="showSenderDropdown = true"
+              />
+              <div v-if="showSenderDropdown && (filteredSenders.length > 0 || senderSearch)" class="dropdown">
+                <div 
+                  v-for="user in filteredSenders" 
+                  :key="user.id"
+                  class="dropdown-item"
+                  @click="selectSender(user)"
+                >
+                  {{ user.username }}
+                </div>
+                <div v-if="filteredSenders.length === 0 && senderSearch" class="dropdown-item no-results">
+                  No users found
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="paymentReceiver">Receiver</label>
+            <div class="select-with-search">
+              <input 
+                id="paymentReceiver"
+                v-model="receiverSearch" 
+                type="text" 
+                placeholder="Search receiver..."
+                class="form-input search-input"
+                @focus="showReceiverDropdown = true"
+              />
+              <div v-if="showReceiverDropdown && (filteredReceivers.length > 0 || receiverSearch)" class="dropdown">
+                <div 
+                  v-for="user in filteredReceivers" 
+                  :key="user.id"
+                  class="dropdown-item"
+                  @click="selectReceiver(user)"
+                >
+                  {{ user.username }}
+                </div>
+                <div v-if="filteredReceivers.length === 0 && receiverSearch" class="dropdown-item no-results">
+                  No users found
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="paymentAmount">Amount</label>
+            <input 
+              id="paymentAmount"
+              v-model.number="paymentForm.amount" 
+              type="number" 
+              step="0.01"
+              min="0"
+              required
+              class="form-input"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="paymentTitle">Title/Description</label>
+            <input 
+              id="paymentTitle"
+              v-model="paymentForm.title" 
+              type="text" 
+              required
+              class="form-input"
+              placeholder="Payment description"
+            />
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary" @click="closeAddPayment">
+              Cancel
+            </button>
+            <button type="submit" class="btn-primary" :disabled="saving">
+              {{ saving ? 'Adding...' : 'Add Payment' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Edit Payment Modal -->
+    <div v-if="showEditPayment" class="modal-overlay" @click="closeEditPayment">
+      <div class="modal" @click.stop>
+        <h3>Edit Payment</h3>
+        <p>Original: {{ selectedPayment?.title }}</p>
+        
+        <form @submit.prevent="editPayment">
+          <div class="form-group">
+            <label for="editPaymentAmount">Amount</label>
+            <input 
+              id="editPaymentAmount"
+              v-model.number="editPaymentForm.amount" 
+              type="number" 
+              step="0.01"
+              min="0"
+              required
+              class="form-input"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="editPaymentTitle">Title/Description</label>
+            <input 
+              id="editPaymentTitle"
+              v-model="editPaymentForm.title" 
+              type="text" 
+              required
+              class="form-input"
+              placeholder="Payment description"
+            />
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary" @click="closeEditPayment">
+              Cancel
+            </button>
+            <button type="submit" class="btn-primary" :disabled="saving">
+              {{ saving ? 'Updating...' : 'Update Payment' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Image Modal -->
     <div v-if="selectedImage" class="image-modal-overlay" @click="closeImageModal">
       <div class="image-modal" @click.stop>
@@ -420,10 +625,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue';
+import { ref, reactive, onMounted, onUnmounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { eventsAPI } from '@/utils/api';
-import type { Event, Participant } from '@/types';
+import { eventsAPI, paymentsAPI, authAPI } from '@/utils/api';
+import type { Event, Participant, Payment, UserInfo } from '@/types';
 
 const route = useRoute();
 const router = useRouter();
@@ -436,7 +641,10 @@ const error = ref<string | null>(null);
 const isEditMode = ref(false);
 const showAddParticipant = ref(false);
 const showPaymentModal = ref(false);
+const showAddPayment = ref(false);
+const showEditPayment = ref(false);
 const selectedImage = ref<string | null>(null);
+const availableUsers = ref<UserInfo[]>([]);
 
 const eventForm = reactive({
   name: '',
@@ -464,18 +672,66 @@ const paymentForm = reactive({
   paid_amount: 0
 });
 
+const paymentCreateForm = reactive({
+  sender: null as UserInfo | null,
+  receiver: null as UserInfo | null,
+  amount: 0,
+  title: ''
+});
+
+const senderSearch = ref('');
+const receiverSearch = ref('');
+const showSenderDropdown = ref(false);
+const showReceiverDropdown = ref(false);
+
+const selectedPayment = ref<Payment | null>(null);
+const editPaymentForm = reactive({
+  amount: 0,
+  title: ''
+});
+
 const loadEvent = async () => {
   try {
     loading.value = true;
     const eventId = route.params.id as string;
     const eventData = await eventsAPI.getEvent(eventId);
+    // Ensure arrays exist
+    if (!eventData.payments) {
+      eventData.payments = [];
+    }
+    if (!eventData.participants) {
+      eventData.participants = [];
+    }
+    if (!eventData.notes) {
+      eventData.notes = [];
+    }
+    if (!eventData.images) {
+      eventData.images = [];
+    }
+    if (!eventData.locations) {
+      eventData.locations = [];
+    }
     event.value = eventData;
+    await loadAvailableUsers();
     resetForm();
   } catch (err) {
     error.value = 'Failed to load event';
     console.error(err);
   } finally {
     loading.value = false;
+  }
+};
+
+const loadAvailableUsers = async () => {
+  try {
+    const users = await authAPI.getUsers();
+    availableUsers.value = users.map(user => ({
+      id: user.id,
+      username: user.username,
+      email: user.email
+    }));
+  } catch (err) {
+    console.error('Failed to load users:', err);
   }
 };
 
@@ -490,10 +746,10 @@ const resetForm = () => {
     end_date: event.value.end_date || '',
     start_time: event.value.start_time,
     end_time: event.value.end_time || '',
-    notes: [...event.value.notes]
+    notes: [...(event.value.notes || [])]
   });
   
-  notesInput.value = event.value.notes.join('\n');
+  notesInput.value = (event.value.notes || []).join('\n');
 };
 
 const toggleEditMode = () => {
@@ -685,8 +941,151 @@ const closeImageModal = () => {
   selectedImage.value = null;
 };
 
+const addPayment = async () => {
+  if (!event.value || !paymentCreateForm.sender || !paymentCreateForm.receiver) return;
+  
+  try {
+    saving.value = true;
+    
+    await paymentsAPI.createPayment(event.value.id, {
+      sender: paymentCreateForm.sender,
+      receiver: paymentCreateForm.receiver,
+      amount: paymentCreateForm.amount,
+      title: paymentCreateForm.title
+    });
+    
+    const updatedEvent = await eventsAPI.getEvent(event.value.id);
+    event.value = updatedEvent;
+    
+    closeAddPayment();
+  } catch (err) {
+    error.value = 'Failed to add payment';
+    console.error(err);
+  } finally {
+    saving.value = false;
+  }
+};
+
+const openEditPaymentModal = (payment: Payment) => {
+  selectedPayment.value = payment;
+  editPaymentForm.amount = payment.amount;
+  editPaymentForm.title = payment.title;
+  showEditPayment.value = true;
+};
+
+const editPayment = async () => {
+  if (!event.value || !selectedPayment.value) return;
+  
+  try {
+    saving.value = true;
+    
+    await paymentsAPI.updatePayment(event.value.id, selectedPayment.value.id, {
+      amount: editPaymentForm.amount,
+      title: editPaymentForm.title
+    });
+    
+    const updatedEvent = await eventsAPI.getEvent(event.value.id);
+    event.value = updatedEvent;
+    
+    closeEditPayment();
+  } catch (err) {
+    error.value = 'Failed to update payment';
+    console.error(err);
+  } finally {
+    saving.value = false;
+  }
+};
+
+const confirmDeletePayment = (payment: Payment) => {
+  if (!event.value) return;
+  if (confirm(`Are you sure you want to delete this payment: "${payment.title}"?`)) {
+    deletePayment(payment.id);
+  }
+};
+
+const deletePayment = async (paymentId: string) => {
+  if (!event.value) return;
+  
+  try {
+    saving.value = true;
+    
+    await paymentsAPI.deletePayment(event.value.id, paymentId);
+    const updatedEvent = await eventsAPI.getEvent(event.value.id);
+    event.value = updatedEvent;
+  } catch (err) {
+    error.value = 'Failed to delete payment';
+    console.error(err);
+  } finally {
+    saving.value = false;
+  }
+};
+
+const closeAddPayment = () => {
+  showAddPayment.value = false;
+  Object.assign(paymentCreateForm, {
+    sender: null,
+    receiver: null,
+    amount: 0,
+    title: ''
+  });
+  senderSearch.value = '';
+  receiverSearch.value = '';
+  showSenderDropdown.value = false;
+  showReceiverDropdown.value = false;
+};
+
+const closeEditPayment = () => {
+  showEditPayment.value = false;
+  selectedPayment.value = null;
+  Object.assign(editPaymentForm, {
+    amount: 0,
+    title: ''
+  });
+};
+
+const filteredSenders = computed(() => {
+  if (!senderSearch.value) return availableUsers.value;
+  return availableUsers.value.filter(user => 
+    user.username.toLowerCase().includes(senderSearch.value.toLowerCase()) ||
+    user.email.toLowerCase().includes(senderSearch.value.toLowerCase())
+  );
+});
+
+const filteredReceivers = computed(() => {
+  if (!receiverSearch.value) return availableUsers.value;
+  return availableUsers.value.filter(user => 
+    user.username.toLowerCase().includes(receiverSearch.value.toLowerCase()) ||
+    user.email.toLowerCase().includes(receiverSearch.value.toLowerCase())
+  );
+});
+
+const selectSender = (user: UserInfo) => {
+  paymentCreateForm.sender = user;
+  senderSearch.value = user.username;
+  showSenderDropdown.value = false;
+};
+
+const selectReceiver = (user: UserInfo) => {
+  paymentCreateForm.receiver = user;
+  receiverSearch.value = user.username;
+  showReceiverDropdown.value = false;
+};
+
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as HTMLElement;
+  if (!target.closest('.select-with-search')) {
+    showSenderDropdown.value = false;
+    showReceiverDropdown.value = false;
+  }
+};
+
 onMounted(() => {
   loadEvent();
+  document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
 });
 </script>
 
@@ -1211,6 +1610,174 @@ onMounted(() => {
   color: #7f8c8d;
 }
 
+.payments-section {
+  background: #f8f9fa;
+  padding: 2rem;
+  border-radius: 12px;
+  border: 1px solid #ecf0f1;
+  margin-top: 2rem;
+}
+
+.payments-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.payments-section h3 {
+  color: #2c3e50;
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.payments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1rem;
+}
+
+.payment-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #ecf0f1;
+}
+
+.payment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.payment-header h4 {
+  color: #2c3e50;
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.payment-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.payment-amount {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: #e8f5e8;
+  border-radius: 6px;
+}
+
+.amount-label {
+  font-weight: 500;
+  color: #2e7d32;
+}
+
+.amount-value {
+  font-weight: 700;
+  color: #2e7d32;
+  font-size: 1.2rem;
+}
+
+.payment-participants {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.payment-participant {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.participant-label {
+  font-weight: 500;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.participant-name {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.payment-date {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.date-label {
+  font-weight: 500;
+}
+
+.date-value {
+  color: #7f8c8d;
+}
+
+.empty-payments {
+  text-align: center;
+  padding: 2rem;
+  color: #7f8c8d;
+}
+
+.select-with-search {
+  position: relative;
+}
+
+.search-input {
+  cursor: pointer;
+}
+
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-item {
+  padding: 0.75rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s;
+}
+
+.dropdown-item:hover {
+  background: #f8f9fa;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item.no-results {
+  color: #7f8c8d;
+  cursor: default;
+  font-style: italic;
+}
+
+.dropdown-item.no-results:hover {
+  background: white;
+}
+
 @media (max-width: 768px) {
   .event-detail-view {
     padding: 1rem;
@@ -1254,6 +1821,16 @@ onMounted(() => {
   }
   
   .participants-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .payments-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .payments-grid {
     grid-template-columns: 1fr;
   }
 }

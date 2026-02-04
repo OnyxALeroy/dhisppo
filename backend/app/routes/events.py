@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.crud.event import event_crud
 from app.routes.auth import get_current_user_auth, get_organizer_or_admin_user
 from app.schemas.event import EventCreate, EventResponse, EventUpdate, Participant
+from app.schemas.payment import PaymentInDB
 from app.schemas.user import UserRole
 
 router = APIRouter(prefix="/events", tags=["events"])
@@ -34,6 +35,7 @@ async def create_event(
             Participant(**participant)
             for participant in db_event.get("participants", [])
         ],
+        payments=[],
         created_at=db_event["created_at"],
         updated_at=db_event.get("updated_at"),
     )
@@ -70,6 +72,10 @@ async def get_events(
                 Participant(**participant)
                 for participant in event.get("participants", [])
             ],
+            payments=[
+                PaymentInDB(**payment)
+                for payment in event.get("payments", [])
+            ],
             created_at=event["created_at"],
             updated_at=event.get("updated_at"),
         )
@@ -85,6 +91,16 @@ async def get_event(event_id: str):
             status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
         )
 
+    # Build payments safely
+    payments_data = event.get("payments", [])
+    payments_list = []
+    if payments_data:
+        try:
+            payments_list = [PaymentInDB(**payment) for payment in payments_data]
+        except Exception as e:
+            print(f"Error creating PaymentInDB: {e}")
+            payments_list = []
+    
     return EventResponse(
         id=str(event["_id"]),
         name=event.get("name", ""),
@@ -100,6 +116,7 @@ async def get_event(event_id: str):
         participants=[
             Participant(**participant) for participant in event.get("participants", [])
         ],
+        payments=payments_list,
         created_at=event["created_at"],
         updated_at=event.get("updated_at"),
     )
@@ -151,75 +168,17 @@ async def update_event(
             Participant(**participant)
             for participant in updated_event.get("participants", [])
         ],
-        created_at=updated_event["created_at"],
-        updated_at=updated_event.get("updated_at"),
-    )
-
-
-@router.delete("/{event_id}")
-async def delete_event(
-    event_id: str, current_user: dict = Depends(get_current_user_auth)
-):
-    event = await event_crud.get_event_by_id(event_id)
-    if not event:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
-        )
-
-    user_role = current_user.get("role")
-    user_id = str(current_user["_id"])
-
-    if not (
-        user_role == UserRole.ADMIN
-        or (user_role == UserRole.ORGANIZER and user_id in event.get("organizers", []))
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to delete this event.",
-        )
-
-    success = await event_crud.delete_event(event_id)
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
-        )
-    return {"message": "Event deleted successfully"}
-
-
-@router.post("/{event_id}/participants", response_model=EventResponse)
-async def add_participant(
-    event_id: str,
-    participant: Participant,
-    current_user: dict = Depends(get_current_user_auth),
-):
-    updated_event = await event_crud.add_participant(event_id, participant)
-    if not updated_event:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
-        )
-
-    return EventResponse(
-        id=str(updated_event["_id"]),
-        name=updated_event.get("name", ""),
-        organizers=updated_event.get("organizers", []),
-        locations=updated_event.get("locations", []),
-        description=updated_event.get("description", ""),
-        start_date=updated_event["start_date"],
-        end_date=updated_event.get("end_date"),
-        start_time=updated_event["start_time"],
-        end_time=updated_event.get("end_time"),
-        images=updated_event.get("images", []),
-        notes=updated_event.get("notes", []),
-        participants=[
-            Participant(**participant)
-            for participant in updated_event.get("participants", [])
+        payments=[
+            PaymentInDB(**payment)
+            for payment in updated_event.get("payments", [])
         ],
         created_at=updated_event["created_at"],
         updated_at=updated_event.get("updated_at"),
     )
 
-
-@router.delete("/{event_id}/participants/{user_id}", response_model=EventResponse)
+@router.patch(
+    "/{event_id}/participants/{user_id}/payment", response_model=EventResponse
+)
 async def remove_participant(
     event_id: str, user_id: str, current_user: dict = Depends(get_current_user_auth)
 ):
