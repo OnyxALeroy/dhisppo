@@ -103,33 +103,52 @@ const handleRegister = async () => {
 <style scoped>
 .register-container {
     min-height: 100vh;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary-50) 0%, var(--white) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.register-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 20% 80%, rgba(168, 85, 247, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(168, 85, 247, 0.1) 0%, transparent 50%);
+    pointer-events: none;
 }
 
 .register-card {
-    background: white;
+    background: var(--white);
     padding: 3rem;
-    border-radius: 16px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl);
     width: 100%;
-    max-width: 400px;
+    max-width: 420px;
+    border: 1px solid var(--gray-200);
+    position: relative;
+    z-index: 10;
 }
 
 .register-title {
-    color: #333;
-    font-size: 2rem;
+    color: var(--gray-900);
+    font-size: 1.875rem;
+    font-weight: 700;
     margin-bottom: 0.5rem;
     text-align: center;
 }
 
 .register-subtitle {
-    color: #666;
+    color: var(--gray-600);
     text-align: center;
     margin-bottom: 2rem;
+    font-size: 0.875rem;
 }
 
 .register-form {
@@ -145,46 +164,59 @@ const handleRegister = async () => {
 }
 
 .form-group label {
-    color: #333;
+    color: var(--gray-700);
     font-weight: 500;
+    font-size: 0.875rem;
 }
 
 .form-input {
-    padding: 0.75rem 1rem;
-    border: 2px solid #e1e5e9;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: border-color 0.3s ease;
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-lg);
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    background-color: var(--white);
 }
 
 .form-input:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+}
+
+.form-input::placeholder {
+    color: var(--gray-400);
 }
 
 .error-message {
-    color: #e74c3c;
-    background-color: #fdf2f2;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #dc2626;
+    background-color: #fef2f2;
     padding: 0.75rem;
-    border-radius: 8px;
-    text-align: center;
-    border: 1px solid #f5c6cb;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    border: 1px solid #fecaca;
 }
 
 .register-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
+    color: var(--white);
     border: none;
-    padding: 1rem;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 500;
+    padding: 0.875rem;
+    border-radius: var(--radius-lg);
+    font-size: 0.875rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: transform 0.3s ease;
+    transition: all 0.2s ease;
+    margin-top: 0.5rem;
 }
 
 .register-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
 }
 
 .register-btn:disabled {
@@ -195,16 +227,32 @@ const handleRegister = async () => {
 .register-footer {
     text-align: center;
     margin-top: 2rem;
-    color: #666;
+    color: var(--gray-600);
+    font-size: 0.875rem;
 }
 
 .link {
-    color: #667eea;
+    color: var(--primary-600);
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 600;
+    transition: color 0.2s ease;
 }
 
 .link:hover {
-    text-decoration: underline;
+    color: var(--primary-700);
+}
+
+@media (max-width: 640px) {
+    .register-container {
+        padding: 1rem;
+    }
+
+    .register-card {
+        padding: 2rem;
+    }
+
+    .register-title {
+        font-size: 1.5rem;
+    }
 }
 </style>

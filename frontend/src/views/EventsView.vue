@@ -959,9 +959,9 @@ watch(editNotesText, (newText) => {
 
 <style scoped>
 .events-container {
-    max-width: 1200px;
+    max-width: 1280px;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 2rem 1.5rem;
 }
 
 .events-header {
@@ -969,8 +969,10 @@ watch(editNotesText, (newText) => {
 }
 
 .events-header h1 {
-    color: #333;
+    color: var(--gray-900);
     margin: 0 0 1rem 0;
+    font-size: 2rem;
+    font-weight: 700;
 }
 
 .header-actions {
@@ -982,38 +984,47 @@ watch(editNotesText, (newText) => {
 
 .filters {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.75rem;
     flex: 1;
 }
 
 .filter-input {
     flex: 1;
     min-width: 200px;
-    padding: 0.5rem;
-    border: 2px solid #e1e5e9;
-    border-radius: 8px;
-    font-size: 0.9rem;
+    padding: 0.625rem 1rem;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-lg);
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    background-color: var(--white);
 }
 
 .filter-input:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+}
+
+.filter-input::placeholder {
+    color: var(--gray-400);
 }
 
 .create-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
+    color: var(--white);
     border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
+    padding: 0.625rem 1.5rem;
+    border-radius: var(--radius-lg);
     cursor: pointer;
-    font-weight: 500;
-    transition: transform 0.3s ease;
+    font-weight: 600;
+    transition: all 0.2s ease;
     white-space: nowrap;
+    font-size: 0.875rem;
 }
 
 .create-btn:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
 }
 
 .loading,
@@ -1021,43 +1032,52 @@ watch(editNotesText, (newText) => {
 .empty-state {
     text-align: center;
     padding: 3rem;
-    color: #666;
+    color: var(--gray-600);
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--gray-200);
 }
 
 .error {
-    color: #e74c3c;
-    background-color: #fdf2f2;
-    border-radius: 8px;
-    border: 1px solid #f5c6cb;
+    color: #dc2626;
+    background-color: #fef2f2;
+    border-color: #fecaca;
 }
 
 .clear-filters {
     background: none;
     border: none;
-    color: #667eea;
+    color: var(--primary-600);
     text-decoration: underline;
     cursor: pointer;
     font: inherit;
+    font-weight: 500;
+}
+
+.clear-filters:hover {
+    color: var(--primary-700);
 }
 
 .events-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-    gap: 2rem;
+    gap: 1.5rem;
 }
 
 .event-card {
-    background: white;
-    border-radius: 12px;
+    background: var(--white);
+    border-radius: var(--radius-xl);
     padding: 1.5rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
     transition: all 0.3s ease;
-    border-left: 4px solid #667eea;
+    border: 1px solid var(--gray-200);
+    border-left: 4px solid var(--primary-500);
 }
 
 .event-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-200);
 }
 
 .event-header {
