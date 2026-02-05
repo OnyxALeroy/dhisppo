@@ -58,11 +58,15 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
 
-  if (!authStore.user && authStore.token) {
+  if (authStore.token && !authStore.user) {
     try {
       await authStore.fetchCurrentUser();
     } catch (error) {
       authStore.logout();
+      if (to.meta.requiresAuth) {
+        next("/login");
+        return;
+      }
     }
   }
 

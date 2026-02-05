@@ -7,7 +7,7 @@ export const useAuthStore = defineStore("auth", () => {
   const user = ref<User | null>(null);
   const token = ref<string | null>(localStorage.getItem("access_token"));
 
-  const isAuthenticated = computed(() => !!token.value && !!user.value);
+  const isAuthenticated = computed(() => !!token.value && !!user.value && token.value !== "");
   const isAdmin = computed(() => user.value?.role === "admin");
   const isOrganizer = computed(() => user.value?.role === "organizer");
   const canCreateEvents = computed(() => isAdmin.value || isOrganizer.value);
