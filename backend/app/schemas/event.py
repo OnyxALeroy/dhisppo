@@ -3,6 +3,7 @@ from typing import List, Optional, Union
 
 from pydantic import BaseModel, Field
 from .payment import PaymentInDB
+from .expenditure import ExpenditureInDB
 
 
 class Participant(BaseModel):
@@ -30,6 +31,7 @@ class EventBase(BaseModel):
 class EventCreate(EventBase):
     participants: List[Participant] = Field(default_factory=list)
     payments: List[PaymentInDB] = Field(default_factory=list)
+    expenditures: List[ExpenditureInDB] = Field(default_factory=list)
 
 
 class EventUpdate(BaseModel):
@@ -45,12 +47,14 @@ class EventUpdate(BaseModel):
     notes: Optional[List[str]] = None
     participants: Optional[List[Participant]] = None
     payments: Optional[List[PaymentInDB]] = None
+    expenditures: Optional[List[ExpenditureInDB]] = None
 
 
 class EventInDB(EventBase):
     id: str
     participants: List[Participant]
     payments: List[PaymentInDB] = Field(default_factory=list)
+    expenditures: List[ExpenditureInDB] = Field(default_factory=list)
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -72,6 +76,7 @@ class EventResponse(BaseModel):
     notes: List[str]
     participants: List[Participant]
     payments: List[PaymentInDB] = Field(default_factory=list)
+    expenditures: List[ExpenditureInDB] = Field(default_factory=list)
     created_at: datetime
     updated_at: Optional[datetime] = None
 

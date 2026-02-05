@@ -11,6 +11,9 @@ import type {
   Payment,
   PaymentCreate,
   PaymentUpdate,
+  Expenditure,
+  ExpenditureCreate,
+  ExpenditureUpdate,
 } from "@/types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -111,6 +114,35 @@ export const paymentsAPI = {
 
   getMyPayments: (): Promise<Payment[]> =>
     api.get(`/payments/my/payments`).then((res) => res.data),
+
+  getMyPaymentSummary: (): Promise<{ total_given: number; total_received: number }> =>
+    api.get(`/payments/my/payment-summary`).then((res) => res.data),
+};
+
+export const expendituresAPI = {
+  createExpenditure: (eventId: string, expenditure: ExpenditureCreate): Promise<Expenditure> =>
+    api.post(`/expenditures/events/${eventId}/expenditures`, expenditure).then((res) => res.data),
+
+  getEventExpenditures: (eventId: string): Promise<Expenditure[]> =>
+    api.get(`/expenditures/events/${eventId}/expenditures`).then((res) => res.data),
+
+  getExpenditure: (eventId: string, expenditureId: string): Promise<Expenditure> =>
+    api.get(`/expenditures/events/${eventId}/expenditures/${expenditureId}`).then((res) => res.data),
+
+  updateExpenditure: (eventId: string, expenditureId: string, expenditure: ExpenditureUpdate): Promise<Expenditure> =>
+    api.patch(`/expenditures/events/${eventId}/expenditures/${expenditureId}`, expenditure).then((res) => res.data),
+
+  deleteExpenditure: (eventId: string, expenditureId: string): Promise<void> =>
+    api.delete(`/expenditures/events/${eventId}/expenditures/${expenditureId}`).then((res) => res.data),
+
+  getUserExpenditures: (userId: string): Promise<Expenditure[]> =>
+    api.get(`/expenditures/user/${userId}/expenditures`).then((res) => res.data),
+
+  getMyExpenditures: (): Promise<Expenditure[]> =>
+    api.get(`/expenditures/my/expenditures`).then((res) => res.data),
+
+  getMyExpenditureSummary: (): Promise<{ total_spent: number }> =>
+    api.get(`/expenditures/my/expenditure-summary`).then((res) => res.data),
 };
 
 export default api;

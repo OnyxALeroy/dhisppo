@@ -388,6 +388,71 @@
           </div>
         </div>
       </div>
+
+      <!-- Expenditures Section (always visible) -->
+      <div class="expenditures-section">
+        <div class="expenditures-header">
+          <h3>🛒 Expenditures ({{ (event.expenditures || []).length }})</h3>
+          <button 
+            class="btn-primary"
+            @click="showAddExpenditure = true"
+          >
+            Add Expenditure
+          </button>
+        </div>
+
+        <div v-if="!event.expenditures || event.expenditures.length === 0" class="empty-expenditures">
+          <p>No expenditures yet</p>
+        </div>
+
+        <div v-else class="expenditures-grid">
+          <div 
+            v-for="expenditure in event.expenditures" 
+            :key="expenditure.id"
+            class="expenditure-card"
+          >
+            <div class="expenditure-header">
+              <h4>{{ expenditure.description }}</h4>
+              <button 
+                class="btn-danger btn-small"
+                @click="confirmDeleteExpenditure(expenditure)"
+              >
+                Delete
+              </button>
+            </div>
+            
+            <div class="expenditure-body">
+              <div class="expenditure-amount">
+                <span class="amount-label">Amount:</span>
+                <span class="amount-value">${{ expenditure.amount.toFixed(2) }}</span>
+              </div>
+              
+              <div class="expenditure-participants">
+                <div class="expenditure-participant">
+                  <span class="participant-label">Paid by:</span>
+                  <span class="participant-name">{{ getPayerUsername(expenditure.payer_id, expenditure.payer) }}</span>
+                </div>
+                <div class="expenditure-participant">
+                  <span class="participant-label">Paid to:</span>
+                  <span class="participant-name">{{ expenditure.receiver }}</span>
+                </div>
+              </div>
+              
+              <div class="expenditure-date">
+                <span class="date-label">Date:</span>
+                <span class="date-value">{{ formatDate(expenditure.created_at) }}</span>
+              </div>
+              
+              <button 
+                class="btn-secondary btn-small btn-full"
+                @click="openEditExpenditureModal(expenditure)"
+              >
+                Edit Expenditure
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Add Participant Modal -->
@@ -614,6 +679,143 @@
       </div>
     </div>
 
+    <!-- Add Expenditure Modal -->
+    <div v-if="showAddExpenditure" class="modal-overlay" @click="closeAddExpenditure">
+      <div class="modal" @click.stop>
+        <h3>Add Expenditure</h3>
+        <form @submit.prevent="addExpenditure">
+          <div class="form-group">
+            <label for="expenditurePayer">Paid by</label>
+            <div class="select-with-search">
+              <input 
+                id="expenditurePayer"
+                v-model="payerSearch" 
+                type="text" 
+                placeholder="Search payer..."
+                class="form-input search-input"
+                @focus="showPayerDropdown = true"
+              />
+              <div v-if="showPayerDropdown && (filteredPayers.length > 0 || payerSearch)" class="dropdown">
+                <div 
+                  v-for="user in filteredPayers" 
+                  :key="user.id"
+                  class="dropdown-item"
+                  @click="selectPayer(user)"
+                >
+                  {{ user.username }}
+                </div>
+                <div v-if="filteredPayers.length === 0 && payerSearch" class="dropdown-item no-results">
+                  No users found
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="expenditureReceiver">Paid to</label>
+            <input 
+              id="expenditureReceiver"
+              v-model="expenditureCreateForm.receiver" 
+              type="text" 
+              required
+              class="form-input"
+              placeholder="Vendor, service, etc."
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="expenditureAmount">Amount</label>
+            <input 
+              id="expenditureAmount"
+              v-model.number="expenditureCreateForm.amount" 
+              type="number" 
+              step="0.01"
+              min="0"
+              required
+              class="form-input"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="expenditureDescription">Description</label>
+            <input 
+              id="expenditureDescription"
+              v-model="expenditureCreateForm.description" 
+              type="text" 
+              required
+              class="form-input"
+              placeholder="What was this expenditure for?"
+            />
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary" @click="closeAddExpenditure">
+              Cancel
+            </button>
+            <button type="submit" class="btn-primary" :disabled="saving">
+              {{ saving ? 'Adding...' : 'Add Expenditure' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Edit Expenditure Modal -->
+    <div v-if="showEditExpenditure" class="modal-overlay" @click="closeEditExpenditure">
+      <div class="modal" @click.stop>
+        <h3>Edit Expenditure</h3>
+        <p>Original: {{ selectedExpenditure?.description }}</p>
+        
+        <form @submit.prevent="editExpenditure">
+          <div class="form-group">
+            <label for="editExpenditureAmount">Amount</label>
+            <input 
+              id="editExpenditureAmount"
+              v-model.number="editExpenditureForm.amount" 
+              type="number" 
+              step="0.01"
+              min="0"
+              required
+              class="form-input"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="editExpenditureReceiver">Paid to</label>
+            <input 
+              id="editExpenditureReceiver"
+              v-model="editExpenditureForm.receiver" 
+              type="text" 
+              required
+              class="form-input"
+              placeholder="Vendor, service, etc."
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="editExpenditureDescription">Description</label>
+            <input 
+              id="editExpenditureDescription"
+              v-model="editExpenditureForm.description" 
+              type="text" 
+              required
+              class="form-input"
+              placeholder="What was this expenditure for?"
+            />
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary" @click="closeEditExpenditure">
+              Cancel
+            </button>
+            <button type="submit" class="btn-primary" :disabled="saving">
+              {{ saving ? 'Updating...' : 'Update Expenditure' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Image Modal -->
     <div v-if="selectedImage" class="image-modal-overlay" @click="closeImageModal">
       <div class="image-modal" @click.stop>
@@ -627,8 +829,8 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, onUnmounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { eventsAPI, paymentsAPI, authAPI } from '@/utils/api';
-import type { Event, Participant, Payment, UserInfo } from '@/types';
+import { eventsAPI, paymentsAPI, expendituresAPI, authAPI } from '@/utils/api';
+import type { Event, Participant, Payment, UserInfo, Expenditure } from '@/types';
 
 const route = useRoute();
 const router = useRouter();
@@ -643,6 +845,8 @@ const showAddParticipant = ref(false);
 const showPaymentModal = ref(false);
 const showAddPayment = ref(false);
 const showEditPayment = ref(false);
+const showAddExpenditure = ref(false);
+const showEditExpenditure = ref(false);
 const selectedImage = ref<string | null>(null);
 const availableUsers = ref<UserInfo[]>([]);
 
@@ -690,6 +894,23 @@ const editPaymentForm = reactive({
   title: ''
 });
 
+const expenditureCreateForm = reactive({
+  payer_id: '',
+  amount: 0,
+  receiver: '',
+  description: ''
+});
+
+const selectedExpenditure = ref<Expenditure | null>(null);
+const editExpenditureForm = reactive({
+  amount: 0,
+  receiver: '',
+  description: ''
+});
+
+const payerSearch = ref('');
+const showPayerDropdown = ref(false);
+
 const loadEvent = async () => {
   try {
     loading.value = true;
@@ -711,6 +932,16 @@ const loadEvent = async () => {
     if (!eventData.locations) {
       eventData.locations = [];
     }
+    
+    // Fetch expenditures directly to ensure they're loaded
+    try {
+      const expendituresData = await expendituresAPI.getEventExpenditures(eventId);
+      eventData.expenditures = expendituresData;
+    } catch (expenditureErr) {
+      console.warn('Failed to load expenditures, using empty array:', expenditureErr);
+      eventData.expenditures = [];
+    }
+    
     event.value = eventData;
     await loadAvailableUsers();
     resetForm();
@@ -1043,6 +1274,119 @@ const closeEditPayment = () => {
   });
 };
 
+const addExpenditure = async () => {
+  if (!event.value || !expenditureCreateForm.payer_id) return;
+  
+  try {
+    saving.value = true;
+    
+    await expendituresAPI.createExpenditure(event.value.id, {
+      payer_id: expenditureCreateForm.payer_id,
+      amount: expenditureCreateForm.amount,
+      receiver: expenditureCreateForm.receiver,
+      description: expenditureCreateForm.description
+    });
+    
+    // Fetch the updated expenditures directly
+    const updatedExpenditures = await expendituresAPI.getEventExpenditures(event.value.id);
+    if (event.value) {
+      event.value.expenditures = updatedExpenditures;
+    }
+    
+    closeAddExpenditure();
+  } catch (err) {
+    error.value = 'Failed to add expenditure';
+    console.error(err);
+  } finally {
+    saving.value = false;
+  }
+};
+
+const openEditExpenditureModal = (expenditure: Expenditure) => {
+  selectedExpenditure.value = expenditure;
+  editExpenditureForm.amount = expenditure.amount;
+  editExpenditureForm.receiver = expenditure.receiver;
+  editExpenditureForm.description = expenditure.description;
+  showEditExpenditure.value = true;
+};
+
+const editExpenditure = async () => {
+  if (!event.value || !selectedExpenditure.value) return;
+  
+  try {
+    saving.value = true;
+    
+    await expendituresAPI.updateExpenditure(event.value.id, selectedExpenditure.value.id, {
+      amount: editExpenditureForm.amount,
+      receiver: editExpenditureForm.receiver,
+      description: editExpenditureForm.description
+    });
+    
+    // Fetch the updated expenditures directly
+    const updatedExpenditures = await expendituresAPI.getEventExpenditures(event.value.id);
+    if (event.value) {
+      event.value.expenditures = updatedExpenditures;
+    }
+    
+    closeEditExpenditure();
+  } catch (err) {
+    error.value = 'Failed to update expenditure';
+    console.error(err);
+  } finally {
+    saving.value = false;
+  }
+};
+
+const confirmDeleteExpenditure = (expenditure: Expenditure) => {
+  if (!event.value) return;
+  if (confirm(`Are you sure you want to delete this expenditure: "${expenditure.description}"?`)) {
+    deleteExpenditure(expenditure.id);
+  }
+};
+
+const deleteExpenditure = async (expenditureId: string) => {
+  if (!event.value) return;
+  
+  try {
+    saving.value = true;
+    
+    await expendituresAPI.deleteExpenditure(event.value.id, expenditureId);
+    
+    // Fetch the updated expenditures directly
+    const updatedExpenditures = await expendituresAPI.getEventExpenditures(event.value.id);
+    if (event.value) {
+      event.value.expenditures = updatedExpenditures;
+    }
+  } catch (err) {
+    error.value = 'Failed to delete expenditure';
+    console.error(err);
+  } finally {
+    saving.value = false;
+  }
+};
+
+const closeAddExpenditure = () => {
+  showAddExpenditure.value = false;
+  Object.assign(expenditureCreateForm, {
+    payer_id: '',
+    amount: 0,
+    receiver: '',
+    description: ''
+  });
+  payerSearch.value = '';
+  showPayerDropdown.value = false;
+};
+
+const closeEditExpenditure = () => {
+  showEditExpenditure.value = false;
+  selectedExpenditure.value = null;
+  Object.assign(editExpenditureForm, {
+    amount: 0,
+    receiver: '',
+    description: ''
+  });
+};
+
 const filteredSenders = computed(() => {
   if (!senderSearch.value) return availableUsers.value;
   return availableUsers.value.filter(user => 
@@ -1059,6 +1403,14 @@ const filteredReceivers = computed(() => {
   );
 });
 
+const filteredPayers = computed(() => {
+  if (!payerSearch.value) return availableUsers.value;
+  return availableUsers.value.filter(user => 
+    user.username.toLowerCase().includes(payerSearch.value.toLowerCase()) ||
+    user.email.toLowerCase().includes(payerSearch.value.toLowerCase())
+  );
+});
+
 const selectSender = (user: UserInfo) => {
   paymentCreateForm.sender = user;
   senderSearch.value = user.username;
@@ -1071,11 +1423,28 @@ const selectReceiver = (user: UserInfo) => {
   showReceiverDropdown.value = false;
 };
 
+const getPayerUsername = (payerId: string, payer?: UserInfo) => {
+  // If payer info is available, use it directly
+  if (payer) {
+    return payer.username;
+  }
+  // Otherwise, look up from available users
+  const user = availableUsers.value.find(u => u.id === payerId);
+  return user ? user.username : payerId;
+};
+
+const selectPayer = (user: UserInfo) => {
+  expenditureCreateForm.payer_id = user.id;
+  payerSearch.value = user.username;
+  showPayerDropdown.value = false;
+};
+
 const handleClickOutside = (event: MouseEvent) => {
   const target = event.target as HTMLElement;
   if (!target.closest('.select-with-search')) {
     showSenderDropdown.value = false;
     showReceiverDropdown.value = false;
+    showPayerDropdown.value = false;
   }
 };
 
@@ -1633,13 +2002,13 @@ onUnmounted(() => {
 
 .payments-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 1rem;
 }
 
 .payment-card {
   background: white;
-  padding: 1.5rem;
+  padding: 1.2rem;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: 1px solid #ecf0f1;
@@ -1649,20 +2018,20 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.8rem;
 }
 
 .payment-header h4 {
   color: #2c3e50;
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
 }
 
 .payment-body {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.8rem;
 }
 
 .payment-amount {
@@ -1725,6 +2094,99 @@ onUnmounted(() => {
 }
 
 .empty-payments {
+  text-align: center;
+  padding: 2rem;
+  color: #7f8c8d;
+}
+
+.expenditures-section {
+  background: #fef8e7;
+  padding: 2rem;
+  border-radius: 12px;
+  border: 1px solid #f0e68c;
+  margin-top: 2rem;
+}
+
+.expenditures-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.expenditures-section h3 {
+  color: #2c3e50;
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.expenditures-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 1rem;
+}
+
+.expenditure-card {
+  background: white;
+  padding: 1.2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f0e68c;
+}
+
+.expenditure-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+.expenditure-header h4 {
+  color: #2c3e50;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.expenditure-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.expenditure-amount {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: #fff3cd;
+  border-radius: 6px;
+}
+
+.expenditure-amount .amount-label {
+  font-weight: 500;
+  color: #856404;
+}
+
+.expenditure-amount .amount-value {
+  font-weight: 700;
+  color: #856404;
+  font-size: 1.1rem;
+}
+
+.expenditure-participants {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.expenditure-participant {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.empty-expenditures {
   text-align: center;
   padding: 2rem;
   color: #7f8c8d;
@@ -1831,6 +2293,16 @@ onUnmounted(() => {
   }
   
   .payments-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .expenditures-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .expenditures-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -273,3 +273,28 @@ async def get_my_payments(
         }
         for result in payments_with_events
     ]
+
+
+@router.get("/my/payment-summary")
+async def get_my_payment_summary(
+    current_user: dict = Depends(get_current_user_auth)
+):
+    """Get payment summary for current user (total given and total received)"""
+    
+    user_id = str(current_user["_id"])
+    payments_with_events = await payment_crud.get_payments_by_user(user_id, as_sender=True, as_receiver=True)
+    
+    total_given = 0.0
+    total_received = 0.0
+    
+    for result in payments_with_events:
+        payment = result["payment"]
+        if payment["sender"]["id"] == user_id:
+            total_given += payment["amount"]
+        if payment["receiver"]["id"] == user_id:
+            total_received += payment["amount"]
+    
+    return {
+        "total_given": total_given,
+        "total_received": total_received
+    }

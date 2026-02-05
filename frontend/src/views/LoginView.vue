@@ -2,9 +2,7 @@
     <div class="login-container">
         <div class="login-card">
             <h1 class="login-title">Welcome Back!</h1>
-            <p class="login-subtitle">
-                Sign in to manage your New Year's resolutions
-            </p>
+            <p class="login-subtitle">Sign in to access our Events!</p>
 
             <form @submit.prevent="handleLogin" class="login-form">
                 <div class="form-group">

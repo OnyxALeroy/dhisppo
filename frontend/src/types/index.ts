@@ -51,6 +51,7 @@ export interface Event {
   notes: string[];
   participants: Participant[];
   payments: Payment[];
+  expenditures?: Expenditure[];
   created_at: string;
   updated_at?: string;
 }
@@ -68,6 +69,7 @@ export interface EventCreate {
   notes?: string[];
   participants?: Participant[];
   payments?: Payment[];
+  expenditures?: Expenditure[];
 }
 
 export interface EventUpdate {
@@ -83,6 +85,7 @@ export interface EventUpdate {
   notes?: string[];
   participants?: Participant[];
   payments?: Payment[];
+  expenditures?: Expenditure[];
 }
 
 export interface UserInfo {
@@ -110,4 +113,27 @@ export interface PaymentCreate {
 export interface PaymentUpdate {
   amount?: number;
   title?: string;
+}
+
+export interface Expenditure {
+  id: string;
+  payer_id: string;
+  payer: UserInfo;
+  amount: number;
+  receiver: string;
+  description: string;
+  created_at: string;
+}
+
+export interface ExpenditureCreate {
+  payer_id: string;
+  amount: number;
+  receiver: string;
+  description: string;
+}
+
+export interface ExpenditureUpdate {
+  amount?: number;
+  receiver?: string;
+  description?: string;
 }

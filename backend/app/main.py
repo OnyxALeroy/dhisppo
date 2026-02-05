@@ -8,6 +8,7 @@ from app.crud.user import user_crud
 from app.routes import auth_router
 from app.routes.events import router as events_router
 from app.routes.payments import router as payments_router
+from app.routes.expenditures import router as expenditures_router
 
 
 @asynccontextmanager
@@ -36,6 +37,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(events_router)
 app.include_router(payments_router)
+app.include_router(expenditures_router)
 
 
 @app.get("/")

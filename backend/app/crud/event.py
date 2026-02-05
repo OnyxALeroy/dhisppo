@@ -42,6 +42,8 @@ class EventCRUD:
             event["payments"] = []
         if event and "participants" not in event:
             event["participants"] = []
+        if event and "expenditures" not in event:
+            event["expenditures"] = []
         return event
 
     async def get_events(self, skip: int = 0, limit: int = 100) -> List[dict]:
@@ -58,6 +60,8 @@ class EventCRUD:
                 event["payments"] = []
             if "participants" not in event:
                 event["participants"] = []
+            if "expenditures" not in event:
+                event["expenditures"] = []
         return events
 
     async def get_events_by_organizer(
@@ -76,6 +80,8 @@ class EventCRUD:
                 event["payments"] = []
             if "participants" not in event:
                 event["participants"] = []
+            if "expenditures" not in event:
+                event["expenditures"] = []
         return events
 
     async def get_events_by_location(
@@ -94,6 +100,8 @@ class EventCRUD:
                 event["payments"] = []
             if "participants" not in event:
                 event["participants"] = []
+            if "expenditures" not in event:
+                event["expenditures"] = []
         return events
 
     async def update_event(

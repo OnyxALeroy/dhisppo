@@ -27,32 +27,32 @@
             <div class="payment-summary">
                 <h3>Payment Summary</h3>
                 <div class="summary-cards">
-                    <div class="summary-card total-due">
+                    <div class="summary-card total-given">
+                        <div class="card-icon">💸</div>
+                        <div class="card-content">
+                            <div class="card-label">Total Given</div>
+                            <div class="card-amount">
+                                ${{ paymentSummaryLoading ? '0.00' : (paymentSummary?.total_given || 0).toFixed(2) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="summary-card total-received">
                         <div class="card-icon">💰</div>
                         <div class="card-content">
-                            <div class="card-label">Total Amount Due</div>
+                            <div class="card-label">Total Received</div>
                             <div class="card-amount">
-                                ${{ totalDue.toFixed(2) }}
+                                ${{ paymentSummaryLoading ? '0.00' : (paymentSummary?.total_received || 0).toFixed(2) }}
                             </div>
                         </div>
                     </div>
 
-                    <div class="summary-card total-paid">
-                        <div class="card-icon">✅</div>
+                    <div class="summary-card total-spent">
+                        <div class="card-icon">🛒</div>
                         <div class="card-content">
-                            <div class="card-label">Total Amount Paid</div>
+                            <div class="card-label">Total Spent</div>
                             <div class="card-amount">
-                                ${{ totalPaid.toFixed(2) }}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="summary-card remaining">
-                        <div class="card-icon">📋</div>
-                        <div class="card-content">
-                            <div class="card-label">Remaining Balance</div>
-                            <div class="card-amount">
-                                ${{ remainingBalance.toFixed(2) }}
+                                ${{ expenditureSummaryLoading ? '0.00' : (expenditureSummary?.total_spent || 0).toFixed(2) }}
                             </div>
                         </div>
                     </div>
@@ -151,41 +151,6 @@
                                             )?.paid_amount.toFixed(2)
                                         }}</span
                                     >
-                                </div>
-                                <div class="payment-row">
-                                    <span>Balance:</span>
-                                    <span
-                                        :class="[
-                                            'amount',
-                                            {
-                                                'paid-full':
-                                                    getUserParticipant(event)
-                                                        ?.paid_amount >=
-                                                    getUserParticipant(event)
-                                                        ?.due_payment,
-                                                partial:
-                                                    getUserParticipant(event)
-                                                        ?.paid_amount > 0 &&
-                                                    getUserParticipant(event)
-                                                        ?.paid_amount <
-                                                        getUserParticipant(
-                                                            event,
-                                                        )?.due_payment,
-                                                unpaid:
-                                                    getUserParticipant(event)
-                                                        ?.paid_amount === 0,
-                                            },
-                                        ]"
-                                    >
-                                        ${{
-                                            (
-                                                getUserParticipant(event)
-                                                    ?.due_payment -
-                                                getUserParticipant(event)
-                                                    ?.paid_amount
-                                            ).toFixed(2)
-                                        }}
-                                    </span>
                                 </div>
                             </div>
 
@@ -371,6 +336,7 @@
 import { ref, onMounted, computed } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { useEventStore } from "@/stores/events";
+import { paymentsAPI, expendituresAPI } from "@/utils/api";
 import type { Event, Participant } from "@/types";
 
 const authStore = useAuthStore();
@@ -382,6 +348,10 @@ const loading = computed(() => eventStore.loading);
 const error = computed(() => eventStore.error);
 
 const selectedEvent = ref<Event | null>(null);
+const paymentSummary = ref<{ total_given: number; total_received: number } | null>(null);
+const paymentSummaryLoading = ref(false);
+const expenditureSummary = ref<{ total_spent: number } | null>(null);
+const expenditureSummaryLoading = ref(false);
 
 const userEvents = computed(() => {
     const username = user.value?.username;
@@ -395,24 +365,6 @@ const userEvents = computed(() => {
     );
 });
 
-const totalDue = computed(() => {
-    return userEvents.value.reduce((total, event) => {
-        const participant = getUserParticipant(event);
-        return total + (participant?.due_payment || 0);
-    }, 0);
-});
-
-const totalPaid = computed(() => {
-    return userEvents.value.reduce((total, event) => {
-        const participant = getUserParticipant(event);
-        return total + (participant?.paid_amount || 0);
-    }, 0);
-});
-
-const remainingBalance = computed(() => {
-    return totalDue.value - totalPaid.value;
-});
-
 const getUserParticipant = (event: Event): Participant | undefined => {
     const username = user.value?.username;
     return event.participants.find(
@@ -423,10 +375,36 @@ const getUserParticipant = (event: Event): Participant | undefined => {
 onMounted(async () => {
     try {
         await eventStore.fetchEvents();
+        await Promise.all([
+            fetchPaymentSummary(),
+            fetchExpenditureSummary()
+        ]);
     } catch (error) {
-        console.error("Failed to fetch events:", error);
+        console.error("Failed to fetch data:", error);
     }
 });
+
+const fetchPaymentSummary = async () => {
+    try {
+        paymentSummaryLoading.value = true;
+        paymentSummary.value = await paymentsAPI.getMyPaymentSummary();
+    } catch (error) {
+        console.error("Failed to fetch payment summary:", error);
+    } finally {
+        paymentSummaryLoading.value = false;
+    }
+};
+
+const fetchExpenditureSummary = async () => {
+    try {
+        expenditureSummaryLoading.value = true;
+        expenditureSummary.value = await expendituresAPI.getMyExpenditureSummary();
+    } catch (error) {
+        console.error("Failed to fetch expenditure summary:", error);
+    } finally {
+        expenditureSummaryLoading.value = false;
+    }
+};
 
 const viewEventDetails = (event: Event) => {
     selectedEvent.value = event;
@@ -574,18 +552,18 @@ const formatTime = (timeString: string) => {
     border-left: 4px solid;
 }
 
-.summary-card.total-due {
+.summary-card.total-given {
     background: #fdf2f2;
     border-left-color: #e74c3c;
 }
 
-.summary-card.total-paid {
+.summary-card.total-received {
     background: #f0fdf4;
     border-left-color: #27ae60;
 }
 
-.summary-card.remaining {
-    background: #fefce8;
+.summary-card.total-spent {
+    background: #fef3c7;
     border-left-color: #f59e0b;
 }
 
