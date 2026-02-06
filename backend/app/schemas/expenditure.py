@@ -3,6 +3,13 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 from .payment import UserInfo
+from enum import Enum
+
+
+class ExpenditureType(str, Enum):
+    LOCATION = "location"
+    FOOD = "food"
+    OTHER = "other"
 
 
 class ExpenditureBase(BaseModel):
@@ -11,6 +18,7 @@ class ExpenditureBase(BaseModel):
     amount: float = Field(description="Expenditure amount", gt=0)
     receiver: str = Field(description="Who/what received the payment (vendor, service, etc.)")
     description: str = Field(description="Description of the expenditure")
+    type: ExpenditureType = Field(default=ExpenditureType.OTHER, description="Type of expenditure")
 
 
 class ExpenditureCreate(BaseModel):
@@ -18,12 +26,14 @@ class ExpenditureCreate(BaseModel):
     amount: float = Field(description="Expenditure amount", gt=0)
     receiver: str = Field(description="Who/what received the payment (vendor, service, etc.)")
     description: str = Field(description="Description of the expenditure")
+    type: ExpenditureType = Field(default=ExpenditureType.OTHER, description="Type of expenditure")
 
 
 class ExpenditureUpdate(BaseModel):
     amount: Optional[float] = Field(None, gt=0)
     receiver: Optional[str] = None
     description: Optional[str] = None
+    type: Optional[ExpenditureType] = None
 
 
 class ExpenditureInDB(ExpenditureBase):
@@ -42,6 +52,7 @@ class ExpenditureResponse(BaseModel):
     amount: float
     receiver: str
     description: str
+    type: ExpenditureType
     created_at: datetime
 
     class Config:

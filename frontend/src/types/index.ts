@@ -115,6 +115,12 @@ export interface PaymentUpdate {
   title?: string;
 }
 
+export enum ExpenditureType {
+  LOCATION = "location",
+  FOOD = "food",
+  OTHER = "other"
+}
+
 export interface Expenditure {
   id: string;
   payer_id: string;
@@ -122,6 +128,7 @@ export interface Expenditure {
   amount: number;
   receiver: string;
   description: string;
+  type: ExpenditureType;
   created_at: string;
 }
 
@@ -130,10 +137,12 @@ export interface ExpenditureCreate {
   amount: number;
   receiver: string;
   description: string;
+  type: ExpenditureType;
 }
 
 export interface ExpenditureUpdate {
   amount?: number;
   receiver?: string;
   description?: string;
+  type?: ExpenditureType;
 }

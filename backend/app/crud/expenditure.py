@@ -41,6 +41,7 @@ class ExpenditureCRUD:
             "amount": expenditure_data.amount,
             "receiver": expenditure_data.receiver,
             "description": expenditure_data.description,
+            "type": expenditure_data.type.value if hasattr(expenditure_data.type, 'value') else expenditure_data.type,
             "created_at": datetime.utcnow(),
         }
 
@@ -81,6 +82,10 @@ class ExpenditureCRUD:
                 expenditure["payer_id"] = ""
                 expenditure["payer"] = {"id": "", "username": "Unknown", "email": None}
             
+            # Ensure type field exists for legacy data
+            if "type" not in expenditure:
+                expenditure["type"] = "other"
+            
             normalized_expenditures.append(expenditure)
         
         return normalized_expenditures
@@ -105,6 +110,10 @@ class ExpenditureCRUD:
                     expenditure["payer_id"] = ""
                     expenditure["payer"] = {"id": "", "username": "Unknown", "email": None}
                 
+                # Ensure type field exists for legacy data
+                if "type" not in expenditure:
+                    expenditure["type"] = "other"
+                
                 return expenditure
         return None
 
@@ -121,6 +130,8 @@ class ExpenditureCRUD:
             update_doc["$set"]["expenditures.$.receiver"] = expenditure_update.receiver
         if expenditure_update.description is not None:
             update_doc["$set"]["expenditures.$.description"] = expenditure_update.description
+        if expenditure_update.type is not None:
+            update_doc["$set"]["expenditures.$.type"] = expenditure_update.type.value if hasattr(expenditure_update.type, 'value') else expenditure_update.type
         
         # Always update the modified timestamp
         update_doc["$set"]["updated_at"] = datetime.utcnow()

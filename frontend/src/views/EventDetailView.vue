@@ -438,6 +438,11 @@
                 </div>
               </div>
               
+              <div class="expenditure-type">
+                <span class="type-label">Type:</span>
+                <span class="type-value" :class="'type-' + (expenditure.type || 'other')">{{ capitalizeFirst(expenditure.type || 'other') }}</span>
+              </div>
+              
               <div class="expenditure-date">
                 <span class="date-label">Date:</span>
                 <span class="date-value">{{ formatDate(expenditure.created_at) }}</span>
@@ -748,6 +753,20 @@
             />
           </div>
 
+          <div class="form-group">
+            <label for="expenditureType">Type</label>
+            <select 
+              id="expenditureType"
+              v-model="expenditureCreateForm.type" 
+              required
+              class="form-input"
+            >
+              <option value="location">Location</option>
+              <option value="food">Food</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
           <div class="modal-actions">
             <button type="button" class="btn-secondary" @click="closeAddExpenditure">
               Cancel
@@ -804,6 +823,20 @@
             />
           </div>
 
+          <div class="form-group">
+            <label for="editExpenditureType">Type</label>
+            <select 
+              id="editExpenditureType"
+              v-model="editExpenditureForm.type" 
+              required
+              class="form-input"
+            >
+              <option value="location">Location</option>
+              <option value="food">Food</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
           <div class="modal-actions">
             <button type="button" class="btn-secondary" @click="closeEditExpenditure">
               Cancel
@@ -830,7 +863,7 @@
 import { ref, reactive, onMounted, onUnmounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { eventsAPI, paymentsAPI, expendituresAPI, authAPI } from '@/utils/api';
-import type { Event, Participant, Payment, UserInfo, Expenditure } from '@/types';
+import type { Event, Participant, Payment, UserInfo, Expenditure, ExpenditureType } from '@/types';
 
 const route = useRoute();
 const router = useRouter();
@@ -898,14 +931,16 @@ const expenditureCreateForm = reactive({
   payer_id: '',
   amount: 0,
   receiver: '',
-  description: ''
+  description: '',
+  type: 'other' as ExpenditureType
 });
 
 const selectedExpenditure = ref<Expenditure | null>(null);
 const editExpenditureForm = reactive({
   amount: 0,
   receiver: '',
-  description: ''
+  description: '',
+  type: 'other' as ExpenditureType
 });
 
 const payerSearch = ref('');
@@ -1057,6 +1092,11 @@ const goBack = () => {
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString();
+};
+
+const capitalizeFirst = (str: string) => {
+  if (!str) return 'Other';
+  return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
 const getPaymentStatus = (participant: Participant) => {
@@ -1284,7 +1324,8 @@ const addExpenditure = async () => {
       payer_id: expenditureCreateForm.payer_id,
       amount: expenditureCreateForm.amount,
       receiver: expenditureCreateForm.receiver,
-      description: expenditureCreateForm.description
+      description: expenditureCreateForm.description,
+      type: expenditureCreateForm.type
     });
     
     // Fetch the updated expenditures directly
@@ -1307,6 +1348,7 @@ const openEditExpenditureModal = (expenditure: Expenditure) => {
   editExpenditureForm.amount = expenditure.amount;
   editExpenditureForm.receiver = expenditure.receiver;
   editExpenditureForm.description = expenditure.description;
+  editExpenditureForm.type = expenditure.type;
   showEditExpenditure.value = true;
 };
 
@@ -1319,7 +1361,8 @@ const editExpenditure = async () => {
     await expendituresAPI.updateExpenditure(event.value.id, selectedExpenditure.value.id, {
       amount: editExpenditureForm.amount,
       receiver: editExpenditureForm.receiver,
-      description: editExpenditureForm.description
+      description: editExpenditureForm.description,
+      type: editExpenditureForm.type
     });
     
     // Fetch the updated expenditures directly
@@ -1371,7 +1414,8 @@ const closeAddExpenditure = () => {
     payer_id: '',
     amount: 0,
     receiver: '',
-    description: ''
+    description: '',
+    type: 'other' as ExpenditureType
   });
   payerSearch.value = '';
   showPayerDropdown.value = false;
@@ -1383,7 +1427,8 @@ const closeEditExpenditure = () => {
   Object.assign(editExpenditureForm, {
     amount: 0,
     receiver: '',
-    description: ''
+    description: '',
+    type: 'other' as ExpenditureType
   });
 };
 
@@ -2184,6 +2229,48 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.expenditure-type {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.type-label {
+  font-weight: 500;
+  color: #666;
+}
+
+.type-value {
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+}
+
+.type-location {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.type-food {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.type-other {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.expenditure-date {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #666;
 }
 
 .empty-expenditures {

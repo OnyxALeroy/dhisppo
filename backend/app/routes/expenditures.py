@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.crud.expenditure import expenditure_crud
 from app.crud.event import event_crud
 from app.routes.auth import get_current_user_auth, get_organizer_or_admin_user
-from app.schemas.expenditure import ExpenditureCreate, ExpenditureResponse, ExpenditureUpdate
+from app.schemas.expenditure import ExpenditureCreate, ExpenditureResponse, ExpenditureUpdate, ExpenditureType
 from app.schemas.user import UserRole
 
 router = APIRouter(prefix="/expenditures", tags=["expenditures"])
@@ -102,6 +102,7 @@ async def get_event_expenditures(
             amount=expenditure["amount"],
             receiver=expenditure["receiver"],
             description=expenditure["description"],
+            type=expenditure["type"],
             created_at=expenditure["created_at"]
         )
         for expenditure in expenditures
@@ -133,6 +134,7 @@ async def get_expenditure(
         amount=expenditure["amount"],
         receiver=expenditure["receiver"],
         description=expenditure["description"],
+        type=ExpenditureType(expenditure["type"]),
         created_at=expenditure["created_at"]
     )
 
@@ -171,6 +173,7 @@ async def update_expenditure(
         amount=updated_expenditure["amount"],
         receiver=updated_expenditure["receiver"],
         description=updated_expenditure["description"],
+        type=ExpenditureType(updated_expenditure["type"]),
         created_at=updated_expenditure["created_at"]
     )
 
@@ -232,6 +235,7 @@ async def get_user_expenditures(
                 amount=result["expenditure"]["amount"],
                 receiver=result["expenditure"]["receiver"],
                 description=result["expenditure"]["description"],
+                type=ExpenditureType(result["expenditure"]["type"]),
                 created_at=result["expenditure"]["created_at"]
             )
         }
@@ -259,6 +263,7 @@ async def get_my_expenditures(
                 amount=result["expenditure"]["amount"],
                 receiver=result["expenditure"]["receiver"],
                 description=result["expenditure"]["description"],
+                type=ExpenditureType(result["expenditure"]["type"]),
                 created_at=result["expenditure"]["created_at"]
             )
         }
