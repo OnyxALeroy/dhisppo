@@ -14,8 +14,8 @@ import { useAuthStore } from "@/stores/auth";
 
 const authStore = useAuthStore();
 
-onMounted(() => {
-    authStore.initialize();
+onMounted(async () => {
+    await authStore.initialize();
 });
 </script>
 

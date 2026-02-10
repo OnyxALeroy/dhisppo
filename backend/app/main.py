@@ -9,6 +9,7 @@ from app.routes import auth_router
 from app.routes.events import router as events_router
 from app.routes.payments import router as payments_router
 from app.routes.expenditures import router as expenditures_router
+from app.routes.notifications import router as notifications_router
 
 
 @asynccontextmanager
@@ -38,6 +39,7 @@ app.include_router(auth_router)
 app.include_router(events_router)
 app.include_router(payments_router)
 app.include_router(expenditures_router)
+app.include_router(notifications_router)
 
 
 @app.get("/")

@@ -14,6 +14,9 @@ import type {
   Expenditure,
   ExpenditureCreate,
   ExpenditureUpdate,
+  Notification,
+  NotificationCreate,
+  NotificationUpdate,
 } from "@/types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -154,6 +157,26 @@ export const expendituresAPI = {
 
   getMyExpenditureSummary: (): Promise<{ total_spent: number }> =>
     api.get(`/expenditures/my/expenditure-summary`).then((res) => res.data),
+};
+
+export const notificationsAPI = {
+  createNotification: (notification: NotificationCreate): Promise<Notification> =>
+    api.post("/notifications/", notification).then((res) => res.data),
+
+  getNotifications: (skip?: number, limit?: number, unreadOnly?: boolean): Promise<Notification[]> =>
+    api.get("/notifications/", { params: { skip, limit, unread_only: unreadOnly } }).then((res) => res.data),
+
+  getUnreadCount: (): Promise<{ unread_count: number }> =>
+    api.get("/notifications/unread-count").then((res) => res.data),
+
+  markAsRead: (notificationId: string): Promise<Notification> =>
+    api.patch(`/notifications/${notificationId}/read`).then((res) => res.data),
+
+  markAllAsRead: (): Promise<{ message: string }> =>
+    api.patch("/notifications/read-all").then((res) => res.data),
+
+  deleteNotification: (notificationId: string): Promise<{ message: string }> =>
+    api.delete(`/notifications/${notificationId}`).then((res) => res.data),
 };
 
 export default api;

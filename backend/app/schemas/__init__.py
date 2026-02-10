@@ -1,4 +1,5 @@
 from .user import UserCreate, UserUpdate, UserResponse, Token, TokenData, LoginRequest
+from .notification import NotificationCreate, NotificationUpdate, NotificationResponse
 
 __all__ = [
     "UserCreate",
@@ -6,5 +7,8 @@ __all__ = [
     "UserResponse",
     "Token",
     "TokenData",
-    "LoginRequest"
+    "LoginRequest",
+    "NotificationCreate",
+    "NotificationUpdate",
+    "NotificationResponse"
 ]

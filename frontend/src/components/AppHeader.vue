@@ -13,6 +13,12 @@
 
                 <template v-if="isAuthenticated">
                     <router-link to="/events" class="nav-link">Events</router-link>
+                    <div class="nav-link-container">
+                        <router-link to="/notifications" class="nav-link">
+                            <span>🔔</span>
+                            <span v-if="unreadCount && unreadCount > 0" class="notification-badge">{{ unreadCount }}</span>
+                        </router-link>
+                    </div>
                     <router-link to="/profile" class="nav-link">Profile</router-link>
                     <router-link v-if="isOrganizer || isAdmin" to="/organizer" class="nav-link">Organizer</router-link>
                     <router-link v-if="isAdmin" to="/admin" class="nav-link">Admin</router-link>
@@ -39,22 +45,87 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted, onUnmounted, watch } from "vue";
 import { useAuthStore } from "@/stores/auth";
+import { useNotificationStore } from "@/stores/notifications";
 import { useRouter } from "vue-router";
 
 const authStore = useAuthStore();
+const notificationStore = useNotificationStore();
 const router = useRouter();
 
 const isAuthenticated = computed(() => authStore.isAuthenticated);
 const isAdmin = computed(() => authStore.isAdmin);
 const isOrganizer = computed(() => authStore.isOrganizer);
 const user = computed(() => authStore.user);
+const unreadCount = computed(() => notificationStore.calculateUnreadCount);
 
 const logout = () => {
     authStore.logout();
     router.push("/");
 };
+
+onMounted(async () => {
+    if (isAuthenticated.value) {
+        try {
+            // Set current user ID for proper filtering
+            if (authStore.user?.id) {
+                notificationStore.setCurrentUserId(authStore.user.id);
+            }
+            await notificationStore.fetchUnreadCount();
+            notificationStore.startPolling();
+        } catch (error) {
+            console.error('Error fetching unread count:', error);
+            if (error.response?.status === 403) {
+                await authStore.initialize();
+            }
+        }
+    }
+});
+
+onUnmounted(() => {
+    notificationStore.stopPolling();
+});
+
+watch(isAuthenticated, async (newValue) => {
+    if (newValue) {
+        try {
+            if (authStore.user?.id) {
+                notificationStore.setCurrentUserId(authStore.user.id);
+            }
+            await notificationStore.fetchUnreadCount();
+            notificationStore.startPolling();
+        } catch (error) {
+            console.error('Error setting up notifications after auth change:', error);
+        }
+    } else {
+        notificationStore.stopPolling();
+    }
+});
+
+watch(user, (newUser) => {
+    if (newUser?.id && isAuthenticated.value) {
+        notificationStore.setCurrentUserId(newUser.id);
+    }
+});
+
+// Handle page visibility changes to optimize polling
+const handleVisibilityChange = () => {
+    if (document.hidden) {
+        notificationStore.stopPolling();
+    } else if (isAuthenticated.value) {
+        notificationStore.fetchUnreadCount();
+        notificationStore.startPolling();
+    }
+};
+
+onMounted(() => {
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+});
+
+onUnmounted(() => {
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+});
 </script>
 
 <style scoped>
@@ -134,6 +205,25 @@ const logout = () => {
 .nav-link-primary:hover {
     background-color: var(--primary-700);
     color: var(--white);
+}
+
+.nav-link-container {
+    position: relative;
+}
+
+.notification-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #ef4444;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 18px;
+    text-align: center;
+    line-height: 1;
 }
 
 .user-menu {

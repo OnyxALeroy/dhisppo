@@ -146,3 +146,22 @@ export interface ExpenditureUpdate {
   description?: string;
   type?: ExpenditureType;
 }
+
+export interface Notification {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+  read: boolean;
+  created_at: string;
+}
+
+export interface NotificationCreate {
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+}
+
+export interface NotificationUpdate {
+  read?: boolean;
+}
