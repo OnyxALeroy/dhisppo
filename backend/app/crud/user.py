@@ -6,6 +6,7 @@ from bson import ObjectId
 from app.core.database import get_database
 from app.core.security import get_password_hash, verify_password
 from app.schemas.user import UserCreate, UserRole, UserUpdate
+from app.core.security import verify_password, get_password_hash
 
 if TYPE_CHECKING:
     from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -58,6 +59,19 @@ class UserCRUD:
         database = await get_database()
         assert database is not None
         update_data = user_update.model_dump(exclude_unset=True)
+        
+        # Handle password update separately
+        current_password = update_data.pop("current_password", None)
+        new_password = update_data.pop("new_password", None)
+        
+        if current_password and new_password:
+            # Verify current password first
+            user = await self.get_user_by_id(user_id)
+            if not user or not verify_password(current_password, user["hashed_password"]):
+                return None
+            # Hash new password
+            update_data["hashed_password"] = get_password_hash(new_password[:72])
+        
         update_data["updated_at"] = datetime.now()
 
         result = await database[self.collection_name].update_one(

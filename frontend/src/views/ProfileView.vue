@@ -4,13 +4,35 @@
             <h1>My Profile</h1>
             <div class="user-info-card">
                 <div class="user-avatar">
-                    <div class="avatar-circle">
-                        {{ user?.username?.charAt(0).toUpperCase() }}
+                    <div class="avatar-circle" :style="avatarStyle">
+                        {{ user?.profile_picture ? '' : user?.username?.charAt(0).toUpperCase() }}
+                        <img v-if="user?.profile_picture" :src="user.profile_picture" :alt="user.username" class="profile-image" />
                     </div>
+                    <input 
+                        type="file" 
+                        ref="profilePictureInput" 
+                        @change="handleProfilePictureChange" 
+                        accept="image/*" 
+                        style="display: none"
+                    />
+                    <button @click="profilePictureInput?.click()" class="change-pp-btn">
+                        📷 Change
+                    </button>
                 </div>
                 <div class="user-details">
-                    <h2>{{ user?.username }}</h2>
+                    <div class="user-info-row">
+                        <h2 v-if="!isEditing" @click="toggleEdit" class="editable-field">{{ user?.username }}</h2>
+                        <input v-else v-model="editForm.username" class="edit-input" @blur="toggleEdit" @keyup.enter="toggleEdit" />
+                        <button @click="toggleEdit" class="edit-btn">{{ isEditing ? '✓' : '✏️' }}</button>
+                    </div>
                     <p class="user-email">{{ user?.email }}</p>
+                    <div class="user-address">
+                        <p v-if="!isEditingAddress" @click="toggleEditAddress" class="editable-field address-field">
+                            {{ user?.address || 'Click to add address...' }}
+                        </p>
+                        <textarea v-else v-model="editForm.address" class="edit-textarea" @blur="toggleEditAddress" placeholder="Enter your address"></textarea>
+                        <button @click="toggleEditAddress" class="edit-btn">{{ isEditingAddress ? '✓' : '✏️' }}</button>
+                    </div>
                     <p class="user-role">
                         <span :class="['role-badge', user?.role]">{{
                             user?.role
@@ -19,6 +41,28 @@
                     <p class="user-joined">
                         Joined: {{ formatDate(user?.created_at) }}
                     </p>
+                </div>
+            </div>
+            
+            <!-- Edit Profile Section -->
+            <div class="edit-profile-section">
+                <h3>Change Password</h3>
+                <div class="password-form">
+                    <div class="form-group">
+                        <label>Current Password:</label>
+                        <input type="password" v-model="passwordForm.current_password" placeholder="Enter current password" />
+                    </div>
+                    <div class="form-group">
+                        <label>New Password:</label>
+                        <input type="password" v-model="passwordForm.new_password" placeholder="Enter new password" />
+                    </div>
+                    <div class="form-group">
+                        <label>Confirm New Password:</label>
+                        <input type="password" v-model="passwordForm.confirm_password" placeholder="Confirm new password" />
+                    </div>
+                    <button @click="updatePassword" class="update-btn" :disabled="!isPasswordFormValid">
+                        Update Password
+                    </button>
                 </div>
             </div>
         </div>
@@ -333,11 +377,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { useEventStore } from "@/stores/events";
-import { paymentsAPI, expendituresAPI } from "@/utils/api";
-import type { Event, Participant } from "@/types";
+import { paymentsAPI, expendituresAPI, authAPI } from "@/utils/api";
+import type { Event, Participant, User } from "@/types";
 
 const authStore = useAuthStore();
 const eventStore = useEventStore();
@@ -347,11 +391,44 @@ const events = computed(() => eventStore.events);
 const loading = computed(() => eventStore.loading);
 const error = computed(() => eventStore.error);
 
+const avatarStyle = computed(() => {
+    if (user.value?.profile_picture) {
+        return {
+            backgroundImage: `url(${user.value.profile_picture})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+        };
+    }
+    return {};
+});
+
+const isPasswordFormValid = computed(() => {
+    return passwordForm.value.current_password && 
+           passwordForm.value.new_password && 
+           passwordForm.value.confirm_password &&
+           passwordForm.value.new_password === passwordForm.value.confirm_password &&
+           passwordForm.value.new_password.length >= 6;
+});
+
 const selectedEvent = ref<Event | null>(null);
 const paymentSummary = ref<{ total_given: number; total_received: number } | null>(null);
 const paymentSummaryLoading = ref(false);
 const expenditureSummary = ref<{ total_spent: number } | null>(null);
 const expenditureSummaryLoading = ref(false);
+
+// Profile editing state
+const isEditing = ref(false);
+const isEditingAddress = ref(false);
+const editForm = ref({
+    username: '',
+    address: ''
+});
+const passwordForm = ref({
+    current_password: '',
+    new_password: '',
+    confirm_password: ''
+});
+const profilePictureInput = ref<HTMLInputElement | null>(null);
 
 const userEvents = computed(() => {
     const username = user.value?.username;
@@ -379,8 +456,20 @@ onMounted(async () => {
             fetchPaymentSummary(),
             fetchExpenditureSummary()
         ]);
+        // Initialize edit form
+        if (user.value) {
+            editForm.value.username = user.value.username;
+            editForm.value.address = user.value.address || '';
+        }
     } catch (error) {
         console.error("Failed to fetch data:", error);
+    }
+});
+
+watch(user, (newUser) => {
+    if (newUser) {
+        editForm.value.username = newUser.username;
+        editForm.value.address = newUser.address || '';
     }
 });
 
@@ -437,6 +526,105 @@ const formatTime = (timeString: string) => {
         hour12: true,
     });
 };
+
+// Profile editing functions
+const toggleEdit = async () => {
+    if (isEditing.value) {
+        // Save changes
+        await updateProfile();
+    } else {
+        // Start editing
+        editForm.value.username = user.value?.username || '';
+    }
+    isEditing.value = !isEditing.value;
+};
+
+const toggleEditAddress = async () => {
+    if (isEditingAddress.value) {
+        // Save changes
+        await updateProfile();
+    } else {
+        // Start editing
+        editForm.value.address = user.value?.address || '';
+    }
+    isEditingAddress.value = !isEditingAddress.value;
+};
+
+const updateProfile = async () => {
+    try {
+        const updateData: any = {};
+        
+        if (editForm.value.username !== user.value?.username) {
+            updateData.username = editForm.value.username;
+        }
+        
+        if (editForm.value.address !== (user.value?.address || '')) {
+            updateData.address = editForm.value.address || null;
+        }
+        
+        if (Object.keys(updateData).length > 0) {
+            const updatedUser = await authAPI.updateProfile(updateData);
+            await authStore.initialize(); // Refresh user data
+            console.log('Profile updated successfully');
+        }
+    } catch (error) {
+        console.error('Failed to update profile:', error);
+        // Revert form values on error
+        if (user.value) {
+            editForm.value.username = user.value.username || '';
+            editForm.value.address = user.value.address || '';
+        }
+    }
+};
+
+const updatePassword = async () => {
+    try {
+        if (!isPasswordFormValid.value) {
+            console.error('Password form is invalid');
+            return;
+        }
+        
+        await authAPI.updateProfile({
+            current_password: passwordForm.value.current_password,
+            new_password: passwordForm.value.new_password
+        });
+        
+        // Clear password form
+        passwordForm.value = {
+            current_password: '',
+            new_password: '',
+            confirm_password: ''
+        };
+        
+        console.log('Password updated successfully');
+    } catch (error) {
+        console.error('Failed to update password:', error);
+    }
+};
+
+const handleProfilePictureChange = async (event: any) => {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    
+    try {
+        // For now, we'll use a simple approach - convert to base64
+        // In production, you'd want to upload to a file storage service
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const base64Image = e.target?.result as string;
+            try {
+                await authAPI.updateProfile({ profile_picture: base64Image });
+                await authStore.initialize(); // Refresh user data
+                console.log('Profile picture updated successfully');
+            } catch (error) {
+                console.error('Failed to update profile picture:', error);
+            }
+        };
+        reader.readAsDataURL(file);
+    } catch (error) {
+        console.error('Failed to process profile picture:', error);
+    }
+};
 </script>
 
 <style scoped>
@@ -481,6 +669,31 @@ const formatTime = (timeString: string) => {
     font-size: 2rem;
     font-weight: bold;
     border: 3px solid rgba(255, 255, 255, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.profile-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.change-pp-btn {
+    margin-top: 0.5rem;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.change-pp-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .user-details {
@@ -516,6 +729,139 @@ const formatTime = (timeString: string) => {
     margin: 0.5rem 0 0 0;
     opacity: 0.8;
     font-size: 0.9rem;
+}
+
+.user-info-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.user-address {
+    margin: 0.5rem 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.editable-field {
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+.editable-field:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.address-field {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    font-style: italic;
+}
+
+.edit-input {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #333;
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    min-width: 200px;
+}
+
+.edit-textarea {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #333;
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    min-width: 300px;
+    min-height: 60px;
+    resize: vertical;
+}
+
+.edit-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.edit-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.edit-profile-section {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin-top: 1rem;
+}
+
+.edit-profile-section h3 {
+    margin: 0 0 1.5rem 0;
+    color: #333;
+    font-size: 1.3rem;
+}
+
+.password-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    font-weight: 500;
+    color: #555;
+}
+
+.form-group input {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.update-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: opacity 0.3s ease;
+}
+
+.update-btn:hover:not(:disabled) {
+    opacity: 0.9;
+}
+
+.update-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .profile-content {

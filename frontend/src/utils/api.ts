@@ -63,6 +63,9 @@ export const authAPI = {
   updateUser: (userId: string, data: { email?: string; username?: string; role?: string }): Promise<User> =>
     api.patch(`/auth/users/${userId}`, data).then((res) => res.data),
 
+  updateProfile: (data: { email?: string; username?: string; address?: string; profile_picture?: string; current_password?: string; new_password?: string }): Promise<User> =>
+    api.patch("/auth/profile", data).then((res) => res.data),
+
   deleteUser: (userId: string): Promise<void> =>
     api.delete(`/auth/users/${userId}`).then((res) => res.data),
 };

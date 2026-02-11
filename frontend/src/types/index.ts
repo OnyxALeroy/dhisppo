@@ -12,6 +12,8 @@ export interface User {
   role: UserRole;
   created_at: string;
   is_active: boolean;
+  address?: string;
+  profile_picture?: string;
 }
 
 export interface LoginRequest {

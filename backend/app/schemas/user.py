@@ -16,6 +16,8 @@ class UserBase(BaseModel):
     email: EmailStr
     username: str
     role: UserRole = UserRole.USER
+    address: Optional[str] = None
+    profile_picture: Optional[str] = None
 
 
 class UserCreate(UserBase):
@@ -26,6 +28,10 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     username: Optional[str] = None
     role: Optional[UserRole] = None
+    address: Optional[str] = None
+    profile_picture: Optional[str] = None
+    current_password: Optional[str] = None
+    new_password: Optional[str] = None
 
 
 class UserInDB(UserBase):

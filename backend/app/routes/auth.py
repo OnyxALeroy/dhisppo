@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.config import settings
-from app.core.security import create_access_token, verify_token
+from app.core.security import create_access_token, verify_password, verify_token
 from app.crud.user import user_crud
 from app.schemas.user import (
     LoginRequest,
@@ -120,6 +120,8 @@ async def read_users_me(current_user: dict = Depends(get_current_user_auth)):
         username=current_user["username"],
         role=current_user["role"],
         created_at=current_user["created_at"],
+        address=current_user.get("address"),
+        profile_picture=current_user.get("profile_picture"),
     )
 
 
@@ -156,13 +158,46 @@ async def update_user(
         username=updated_user["username"],
         role=updated_user["role"],
         created_at=updated_user["created_at"],
+        address=updated_user.get("address"),
+        profile_picture=updated_user.get("profile_picture"),
+    )
+
+
+@router.patch("/profile", response_model=UserResponse)
+async def update_profile(
+    user_update: UserUpdate, current_user: dict = Depends(get_current_user_auth)
+):
+    user_id = str(current_user["_id"])
+
+    # If updating password, verify current password
+    if user_update.current_password and user_update.new_password:
+        if not verify_password(
+            user_update.current_password, current_user["hashed_password"]
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Current password is incorrect",
+            )
+
+    updated_user = await user_crud.update_user(user_id, user_update)
+    if not updated_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to update profile"
+        )
+
+    return UserResponse(
+        id=str(updated_user["_id"]),
+        email=updated_user["email"],
+        username=updated_user["username"],
+        role=updated_user["role"],
+        created_at=updated_user["created_at"],
+        address=updated_user.get("address"),
+        profile_picture=updated_user.get("profile_picture"),
     )
 
 
 @router.delete("/users/{user_id}")
-async def delete_user(
-    user_id: str, current_user: dict = Depends(get_admin_user)
-):
+async def delete_user(user_id: str, current_user: dict = Depends(get_admin_user)):
     success = await user_crud.delete_user(user_id)
     if not success:
         raise HTTPException(

@@ -9,35 +9,61 @@
             </div>
 
             <div class="nav-links">
-                <router-link to="/" class="nav-link">Home</router-link>
-
                 <template v-if="isAuthenticated">
-                    <router-link to="/events" class="nav-link">Events</router-link>
                     <div class="nav-link-container">
                         <router-link to="/notifications" class="nav-link">
                             <span>🔔</span>
-                            <span v-if="unreadCount && unreadCount > 0" class="notification-badge">{{ unreadCount }}</span>
+                            <span
+                                v-if="unreadCount && unreadCount > 0"
+                                class="notification-badge"
+                                >{{ unreadCount }}</span
+                            >
                         </router-link>
                     </div>
-                    <router-link to="/profile" class="nav-link">Profile</router-link>
-                    <router-link v-if="isOrganizer || isAdmin" to="/organizer" class="nav-link">Organizer</router-link>
-                    <router-link v-if="isAdmin" to="/admin" class="nav-link">Admin</router-link>
+                </template>
+
+                <router-link to="/" class="nav-link">Home</router-link>
+
+                <template v-if="isAuthenticated">
+                    <router-link to="/events" class="nav-link"
+                        >Events</router-link
+                    >
+                    
+                    <router-link
+                        v-if="isOrganizer || isAdmin"
+                        to="/organizer"
+                        class="nav-link"
+                        >Organizer</router-link
+                    >
+                    <router-link v-if="isAdmin" to="/admin" class="nav-link"
+                        >Admin</router-link
+                    >
 
                     <div class="user-menu">
-                        <div class="user-avatar">
-                            {{ user?.username?.charAt(0).toUpperCase() }}
-                        </div>
-                        <div class="user-dropdown">
-                            <span class="user-name">{{ user?.username }}</span>
-                            <span class="user-role">{{ user?.role }}</span>
-                        </div>
-                        <button @click="logout" class="logout-btn">Logout</button>
+                        <router-link to="/profile" class="user-profile-link">
+                            <div class="user-avatar">
+                                {{ user?.username?.charAt(0).toUpperCase() }}
+                            </div>
+                            <div class="user-dropdown">
+                                <span class="user-name">{{ user?.username }}</span>
+                                <span class="user-role">{{ user?.role }}</span>
+                            </div>
+                        </router-link>
+                        <button @click="logout" class="logout-btn">
+                            Logout
+                        </button>
                     </div>
                 </template>
 
                 <template v-else>
-                    <router-link to="/login" class="nav-link">Login</router-link>
-                    <router-link to="/register" class="nav-link nav-link-primary">Sign Up</router-link>
+                    <router-link to="/login" class="nav-link"
+                        >Login</router-link
+                    >
+                    <router-link
+                        to="/register"
+                        class="nav-link nav-link-primary"
+                        >Sign Up</router-link
+                    >
                 </template>
             </div>
         </nav>
@@ -75,7 +101,7 @@ onMounted(async () => {
             await notificationStore.fetchUnreadCount();
             notificationStore.startPolling();
         } catch (error) {
-            console.error('Error fetching unread count:', error);
+            console.error("Error fetching unread count:", error);
             if (error.response?.status === 403) {
                 await authStore.initialize();
             }
@@ -96,7 +122,10 @@ watch(isAuthenticated, async (newValue) => {
             await notificationStore.fetchUnreadCount();
             notificationStore.startPolling();
         } catch (error) {
-            console.error('Error setting up notifications after auth change:', error);
+            console.error(
+                "Error setting up notifications after auth change:",
+                error,
+            );
         }
     } else {
         notificationStore.stopPolling();
@@ -120,11 +149,11 @@ const handleVisibilityChange = () => {
 };
 
 onMounted(() => {
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 });
 
 onUnmounted(() => {
-    document.removeEventListener('visibilitychange', handleVisibilityChange);
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
 });
 </script>
 
@@ -232,6 +261,18 @@ onUnmounted(() => {
     gap: 0.75rem;
     padding-left: 1rem;
     border-left: 1px solid var(--gray-200);
+}
+
+.user-profile-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    transition: opacity 0.2s ease;
+}
+
+.user-profile-link:hover {
+    opacity: 0.8;
 }
 
 .user-avatar {
