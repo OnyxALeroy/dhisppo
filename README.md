@@ -49,3 +49,11 @@ npm run dev
 
 ## API Documentation
 Once running, visit http://localhost:8000/docs for interactive API documentation.
+
+## Roadmap
+
+[ ] Création d'Event : visibilité (public / privé):
+  - un organisateur peut tjs ajouter quelqu'un
+  - seuls les events publics peuvent être vu par les users normaux
+[ ] Update la page utilisateurs
+[ ] Faire des fix sur les différents menus et filtres
