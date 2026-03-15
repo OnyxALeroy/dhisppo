@@ -14,6 +14,11 @@
                         placeholder="Filter by location..."
                         class="filter-input"
                     />
+                    <select v-model="filterVisibility" class="filter-input">
+                        <option value="">All Events</option>
+                        <option value="public">Public Only</option>
+                        <option value="private">Private Only</option>
+                    </select>
                 </div>
                 <button
                     v-if="authStore.canCreateEvents"
@@ -31,7 +36,7 @@
 
         <div v-else-if="filteredEvents.length === 0" class="empty-state">
             <h3>No events found</h3>
-            <p v-if="filterOrganizer || filterLocation">
+            <p v-if="filterOrganizer || filterLocation || filterVisibility">
                 Try adjusting your filters or
                 <button @click="clearFilters" class="clear-filters">
                     clear them
@@ -542,6 +547,7 @@ const error = computed(() => eventStore.error);
 
 const filterOrganizer = ref("");
 const filterLocation = ref("");
+const filterVisibility = ref("");
 const showCreateForm = ref(false);
 const showEditForm = ref(false);
 const selectedEvent = ref<Event | null>(null);
@@ -579,6 +585,12 @@ const filteredEvents = computed(() => {
             event.locations.some((loc) =>
                 loc.toLowerCase().includes(filterLocation.value.toLowerCase()),
             ),
+        );
+    }
+
+    if (filterVisibility.value) {
+        filtered = filtered.filter((event) =>
+            event.visibility === filterVisibility.value
         );
     }
 
@@ -707,6 +719,7 @@ const closeDetails = () => {
 const clearFilters = () => {
     filterOrganizer.value = "";
     filterLocation.value = "";
+    filterVisibility.value = "";
 };
 
 const canManageEvent = (event: Event): boolean => {

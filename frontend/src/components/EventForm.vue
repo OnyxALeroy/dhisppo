@@ -222,9 +222,9 @@ const localEvent = reactive<EventCreate>({
     visibility: props.event?.visibility || "public",
 });
 
-const localOrganizersText = ref(props.event?.organizers?.join("\n") || "");
-const localLocationsText = ref(props.event?.locations?.join("\n") || "");
-const localNotesText = ref(props.event?.notes?.join("\n") || "");
+const localOrganizersText = ref(String(props.event?.organizers?.join(props.inputSeparator) || ""));
+const localLocationsText = ref(String(props.event?.locations?.join(props.inputSeparator) || ""));
+const localNotesText = ref(String(props.event?.notes?.join(props.inputSeparator) || ""));
 const locationInput = ref("");
 
 const addLocation = () => {
@@ -278,11 +278,40 @@ watch(localNotesText, (newText) => {
 });
 
 const handleSubmit = () => {
+    // Ensure time is in HH:MM:SS format
+    let startTime = localEvent.start_time;
+    if (startTime && startTime.length === 5) { // HH:MM format
+        startTime = startTime + ":00";
+    }
+    
+    let endTime = localEvent.end_time;
+    if (endTime && endTime.length === 5) { // HH:MM format
+        endTime = endTime + ":00";
+    }
+
+    // Get organizers from text - always process it
+    const organizersText = String(localOrganizersText || "");
+    const organizers = organizersText
+        .split(props.inputSeparator)
+        .map((line: string) => line.trim())
+        .filter((line: string) => line.length > 0);
+    
+    // Also include any organizers directly in localEvent.organizers
+    const allOrganizers = [...new Set([...organizers, ...(localEvent.organizers || [])])];
+
     const eventData: EventCreate = {
-        ...localEvent,
-        start_time: localEvent.start_time + ":00",
-        ...(localEvent.end_time && { end_time: localEvent.end_time + ":00" }),
+        name: localEvent.name,
+        description: localEvent.description,
+        organizers: allOrganizers,
+        locations: localEvent.locations || [],
+        start_date: localEvent.start_date,
+        end_date: localEvent.end_date || undefined,
+        start_time: startTime,
+        end_time: endTime || undefined,
+        notes: localEvent.notes || [],
+        visibility: localEvent.visibility || "public",
     };
+    console.log('Form submit - eventData:', JSON.stringify(eventData));
     emit("submit", eventData);
 };
 

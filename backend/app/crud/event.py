@@ -132,12 +132,27 @@ class EventCRUD:
         return events
 
     async def get_events_by_organizer(
-        self, organizer: str, skip: int = 0, limit: int = 100
+        self, organizer: str, user_id: Optional[str] = None, username: Optional[str] = None, role: str = "user", skip: int = 0, limit: int = 100
     ) -> List[dict]:
         database = await get_database()
+        
+        if role == "admin":
+            query = {"organizers": organizer}
+        elif username and user_id:
+            query = {
+                "organizers": organizer,
+                "$or": [
+                    {"visibility": "public"},
+                    {"organizers": username},
+                    {"participants.user_id": user_id}
+                ]
+            }
+        else:
+            query = {"organizers": organizer, "visibility": "public"}
+        
         events = (
             await database[self.collection_name]
-            .find({"organizers": organizer})
+            .find(query)
             .skip(skip)
             .limit(limit)
             .to_list(length=limit)
@@ -149,15 +164,32 @@ class EventCRUD:
                 event["participants"] = []
             if "expenditures" not in event:
                 event["expenditures"] = []
+            if "visibility" not in event:
+                event["visibility"] = "public"
         return events
 
     async def get_events_by_location(
-        self, location: str, skip: int = 0, limit: int = 100
+        self, location: str, user_id: Optional[str] = None, username: Optional[str] = None, role: str = "user", skip: int = 0, limit: int = 100
     ) -> List[dict]:
         database = await get_database()
+        
+        if role == "admin":
+            query = {"locations": location}
+        elif username and user_id:
+            query = {
+                "locations": location,
+                "$or": [
+                    {"visibility": "public"},
+                    {"organizers": username},
+                    {"participants.user_id": user_id}
+                ]
+            }
+        else:
+            query = {"locations": location, "visibility": "public"}
+        
         events = (
             await database[self.collection_name]
-            .find({"locations": location})
+            .find(query)
             .skip(skip)
             .limit(limit)
             .to_list(length=limit)
@@ -169,6 +201,8 @@ class EventCRUD:
                 event["participants"] = []
             if "expenditures" not in event:
                 event["expenditures"] = []
+            if "visibility" not in event:
+                event["visibility"] = "public"
         return events
 
     async def update_event(

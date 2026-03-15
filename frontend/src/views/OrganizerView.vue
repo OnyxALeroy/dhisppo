@@ -41,6 +41,11 @@
             placeholder="Filter by date..."
             class="filter-input"
           />
+          <select v-model="filterVisibility" class="filter-input">
+            <option value="">All Events</option>
+            <option value="public">Public Only</option>
+            <option value="private">Private Only</option>
+          </select>
         </div>
         <div class="filter-actions">
           <button 
@@ -262,6 +267,7 @@
           ref="eventFormRef"
           :use-textarea="false"
           :use-location-tags="true"
+          input-separator=","
           submit-label="Create Event"
           @submit="handleSaveEvent"
           @cancel="closeModal"
@@ -374,6 +380,7 @@ const error = ref<string | null>(null);
 const filterLocation = ref("");
 const filterName = ref("");
 const filterDate = ref("");
+const filterVisibility = ref("");
 
 // Modal state
 const showCreateModal = ref(false);
@@ -437,11 +444,18 @@ const filteredEvents = computed(() => {
     );
   }
 
+  // Filter by visibility
+  if (filterVisibility.value) {
+    filtered = filtered.filter((event) =>
+      event.visibility === filterVisibility.value
+    );
+  }
+
   return filtered;
 });
 
 const hasActiveFilters = computed(() => {
-  return filterLocation.value || filterName.value || filterDate.value;
+  return filterLocation.value || filterName.value || filterDate.value || filterVisibility.value;
 });
 
 // Methods
@@ -453,6 +467,7 @@ const clearFilters = () => {
   filterLocation.value = "";
   filterName.value = "";
   filterDate.value = "";
+  filterVisibility.value = "";
 };
 
 const formatDate = (dateString: string) => {
@@ -503,6 +518,7 @@ const deleteEvent = async (eventId: string) => {
 const handleSaveEvent = async (eventData: EventCreate) => {
   try {
     loading.value = true;
+    console.log('Saving event:', eventData);
     
     if (showEditModal.value && selectedEvent.value) {
       await eventsAPI.updateEvent(selectedEvent.value.id, eventData);
@@ -512,8 +528,13 @@ const handleSaveEvent = async (eventData: EventCreate) => {
     
     await eventStore.fetchEvents();
     closeModal();
-  } catch (err) {
-    error.value = 'Failed to save event';
+  } catch (err: any) {
+    const detail = err.response?.data?.detail;
+    if (Array.isArray(detail)) {
+      error.value = detail.map((e: any) => `${e.loc?.join('.')}: ${e.msg}`).join(', ');
+    } else {
+      error.value = detail || 'Failed to save event';
+    }
     console.error(err);
   } finally {
     loading.value = false;
