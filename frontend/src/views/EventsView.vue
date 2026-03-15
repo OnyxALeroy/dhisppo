@@ -1101,8 +1101,8 @@ watch(editNotesText, (newText) => {
     background: white;
     padding: 2rem;
     border-radius: 12px;
-    max-width: 600px;
-    width: 90%;
+    max-width: 1000px;
+    width: 98%;
     max-height: 90vh;
     overflow-y: auto;
 }

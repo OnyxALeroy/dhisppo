@@ -813,8 +813,8 @@ const closeCreateEventModal = () => {
     background: white;
     padding: 2rem;
     border-radius: 12px;
-    max-width: 500px;
-    width: 90%;
+    max-width: 1000px;
+    width: 98%;
     max-height: 90vh;
     overflow-y: auto;
 }

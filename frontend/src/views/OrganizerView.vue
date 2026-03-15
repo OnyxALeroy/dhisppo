@@ -16,7 +16,7 @@
         <h2>Your Events</h2>
         <button 
           class="btn-primary" 
-          @click="showCreateModal = true"
+          @click="openCreateModal"
         >
           Create New Event
         </button>
@@ -258,116 +258,14 @@
       <div class="modal" @click.stop>
         <h3>{{ showEditModal ? 'Edit Event' : 'Create New Event' }}</h3>
         
-        <form @submit.prevent="saveEvent">
-          <div class="form-group">
-            <label for="eventName">Event Name</label>
-            <input 
-              id="eventName"
-              v-model="eventForm.name" 
-              type="text" 
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="eventDescription">Description</label>
-            <textarea 
-              id="eventDescription"
-              v-model="eventForm.description" 
-              required
-            ></textarea>
-          </div>
-
-          <div class="form-group">
-            <label for="eventVisibility">Visibility</label>
-            <select id="eventVisibility" v-model="eventForm.visibility">
-              <option value="public">Public - Anyone can find and join</option>
-              <option value="private">Private - Only invited users can join</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="eventLocation">Location</label>
-            <input 
-              id="eventLocation"
-              v-model="eventLocationInput" 
-              type="text" 
-              placeholder="Enter location and press Add"
-            />
-            <button 
-              type="button" 
-              class="btn-secondary"
-              @click="addLocation"
-            >
-              Add Location
-            </button>
-            <div v-if="eventForm.locations.length > 0" class="locations-list">
-              <span 
-                v-for="(loc, index) in eventForm.locations" 
-                :key="index"
-                class="location-tag"
-              >
-                {{ loc }}
-                <button 
-                  type="button"
-                  class="remove-btn"
-                  @click="removeLocation(index)"
-                >
-                  ×
-                </button>
-              </span>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="eventDate">Date</label>
-              <input 
-                id="eventDate"
-                v-model="eventForm.start_date" 
-                type="date" 
-                required
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="eventStartTime">Start Time</label>
-              <input 
-                id="eventStartTime"
-                v-model="eventForm.start_time" 
-                type="time" 
-                required
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="eventEndTime">End Time</label>
-              <input 
-                id="eventEndTime"
-                v-model="eventForm.end_time" 
-                type="time"
-              />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="eventNotes">Notes (one per line)</label>
-            <textarea 
-              id="eventNotes"
-              v-model="eventNotesInput" 
-              placeholder="Enter notes, one per line"
-            ></textarea>
-          </div>
-
-          <div class="modal-actions">
-            <button type="button" class="btn-secondary" @click="closeModal">
-              Cancel
-            </button>
-            <button type="submit" class="btn-primary" :disabled="loading">
-              {{ loading ? 'Saving...' : (showEditModal ? 'Update' : 'Create') }}
-            </button>
-          </div>
-        </form>
+        <EventForm
+          ref="eventFormRef"
+          :use-textarea="false"
+          :use-location-tags="true"
+          submit-label="Create Event"
+          @submit="handleSaveEvent"
+          @cancel="closeModal"
+        />
       </div>
     </div>
 
@@ -459,7 +357,8 @@ import { ref, computed, onMounted, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useEventStore } from '@/stores/events';
-import type { Event, Participant } from '@/types';
+import EventForm from '@/components/EventForm.vue';
+import type { Event, EventCreate, Participant } from '@/types';
 import { eventsAPI } from '@/utils/api';
 
 const authStore = useAuthStore();
@@ -482,22 +381,7 @@ const showEditModal = ref(false);
 const showAddParticipantModal = ref(false);
 const showUpdatePaymentModal = ref(false);
 
-// Form state
-const eventForm = reactive({
-  name: '',
-  description: '',
-  locations: [] as string[],
-  start_date: '',
-  end_date: '',
-  start_time: '',
-  end_time: '',
-  notes: [] as string[],
-  images: [] as string[],
-  visibility: 'public' as 'public' | 'private'
-});
-
-const eventLocationInput = ref('');
-const eventNotesInput = ref('');
+const eventFormRef = ref<InstanceType<typeof EventForm> | null>(null);
 
 const participantForm = reactive({
   user_id: '',
@@ -616,20 +500,14 @@ const deleteEvent = async (eventId: string) => {
   }
 };
 
-const saveEvent = async () => {
+const handleSaveEvent = async (eventData: EventCreate) => {
   try {
     loading.value = true;
     
-    // Process notes
-    eventForm.notes = eventNotesInput.value
-      .split('\n')
-      .map(note => note.trim())
-      .filter(note => note.length > 0);
-
     if (showEditModal.value && selectedEvent.value) {
-      await eventsAPI.updateEvent(selectedEvent.value.id, eventForm);
+      await eventsAPI.updateEvent(selectedEvent.value.id, eventData);
     } else {
-      await eventsAPI.createEvent(eventForm);
+      await eventsAPI.createEvent(eventData);
     }
     
     await eventStore.fetchEvents();
@@ -642,40 +520,18 @@ const saveEvent = async () => {
   }
 };
 
-// Location management
-const addLocation = () => {
-  if (eventLocationInput.value.trim()) {
-    eventForm.locations.push(eventLocationInput.value.trim());
-    eventLocationInput.value = '';
-  }
-};
-
-const removeLocation = (index: number) => {
-  eventForm.locations.splice(index, 1);
-};
-
 // Modal management
+const openCreateModal = () => {
+  if (authStore.user) {
+    eventFormRef.value?.setInitialOrganizers(authStore.user.username);
+  }
+  showCreateModal.value = true;
+};
+
 const closeModal = () => {
   showCreateModal.value = false;
   showEditModal.value = false;
-  resetEventForm();
-};
-
-const resetEventForm = () => {
-  Object.assign(eventForm, {
-    name: '',
-    description: '',
-    locations: [],
-    start_date: '',
-    end_date: '',
-    start_time: '',
-    end_time: '',
-    notes: [],
-    images: [],
-    visibility: 'public'
-  });
-  eventLocationInput.value = '';
-  eventNotesInput.value = '';
+  eventFormRef.value?.reset();
 };
 
 // Participant management
@@ -1102,8 +958,8 @@ onMounted(async () => {
   background: white;
   padding: 2rem;
   border-radius: 12px;
-  max-width: 500px;
-  width: 90%;
+  max-width: 1000px;
+  width: 98%;
   max-height: 90vh;
   overflow-y: auto;
 }
