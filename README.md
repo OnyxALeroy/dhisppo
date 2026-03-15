@@ -1,4 +1,4 @@
-# New Year's Event Organization App
+# D'hisppo
 
 A web application for organizing New Year's events with user authentication and role-based access control.
 
@@ -44,7 +44,7 @@ npm run dev
 ```
 
 ### Database Access
-- MongoDB URL: `mongodb://root:password@localhost:27017/newyears_db?authSource=admin`
+- MongoDB URL: `mongodb://root:password@localhost:27017/dhisppo_db?authSource=admin`
 - Default admin user will be created on first startup
 
 ## API Documentation

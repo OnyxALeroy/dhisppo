@@ -105,7 +105,7 @@ class UserCRUD:
         if not admin_exists:
             admin_user = UserCreate(
                 username="admin",
-                email="admin@newyears.com",
+                email="admin@dhisppo.com",
                 password="admin123",
                 role=UserRole.ADMIN,
             )
@@ -114,7 +114,7 @@ class UserCRUD:
         if not organizer_exists:
             organizer_user = UserCreate(
                 username="organizer",
-                email="organizer@newyears.com",
+                email="organizer@dhisppo.com",
                 password="organizer123",
                 role=UserRole.ORGANIZER,
             )

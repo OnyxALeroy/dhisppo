@@ -1,13 +1,19 @@
 import json
+import os
 import sys
 from pprint import pprint
 import pymongo
 from bson import ObjectId
 
 # --- CONFIGURATION ---
-# Credentials from your docker-compose.yml
-MONGO_URI = "mongodb://root:password@localhost:27017/?authSource=admin"
-DB_NAME = "newyears_db"
+MONGO_USER = os.getenv("MONGO_USER", "root")
+MONGO_PASS = os.getenv("MONGO_PASS", "password")
+MONGO_HOST = os.getenv("MONGO_HOST", "localhost")
+MONGO_PORT = os.getenv("MONGO_PORT", "27017")
+MONGO_DB = os.getenv("MONGO_DB", "dhisppo_db")
+
+MONGO_URI = f"mongodb://{MONGO_USER}:{MONGO_PASS}@{MONGO_HOST}:{MONGO_PORT}/?authSource=admin"
+DB_NAME = MONGO_DB
 
 
 class DBAdmin:

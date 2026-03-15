@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Docker Logs Script for New Years App
+# Docker Logs Script for D'hisppo
 # This script shows continuous logs for frontend and backend containers
 
 set -e

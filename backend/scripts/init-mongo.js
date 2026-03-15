@@ -1,4 +1,4 @@
-db = db.getSiblingDB('newyears_db');
+db = db.getSiblingDB('dhisppo_db');
 
 db.createCollection('users');
 db.users.createIndex({ "username": 1 }, { unique: true });

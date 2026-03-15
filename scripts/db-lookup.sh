@@ -1,9 +1,19 @@
 #!/bin/bash
 
-# Database Lookup Script for New Years App
+# Database Lookup Script for D'hisppo
 # This script allows you to query and lookup data in the MongoDB database
 
 set -e
+
+# Load environment variables from .env file
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+
+if [[ -f "$PROJECT_DIR/.env" ]]; then
+    set -a
+    source "$PROJECT_DIR/.env"
+    set +a
+fi
 
 # Colors
 RED='\033[0;31m'
@@ -12,12 +22,12 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Default values
-DB_HOST="localhost"
-DB_PORT="27017"
-DB_NAME="newyears_db"
-DB_USER="root"
-DB_PASS="password"
+# Default values (fallback if .env is not loaded)
+DB_HOST="${MONGO_HOST:-localhost}"
+DB_PORT="${MONGO_PORT:-27017}"
+DB_NAME="${MONGO_DB:-dhisppo_db}"
+DB_USER="${MONGO_USER:-root}"
+DB_PASS="${MONGO_PASS:-password}"
 
 # Function to show usage
 show_usage() {
@@ -36,7 +46,7 @@ show_usage() {
     echo -e "${GREEN}Options:${NC}"
     echo "  -h, --host     MongoDB host (default: localhost)"
     echo "  -p, --port     MongoDB port (default: 27017)"
-    echo "  -d, --database Database name (default: newyears_db)"
+    echo "  -d, --database Database name (default: dhisppo_db)"
     echo "  -u, --user     Database user (default: root)"
     echo "  -w, --pass     Database password (default: password)"
     echo "  --help         Show this help message"
@@ -50,7 +60,7 @@ show_usage() {
 
 # Function to check if MongoDB is running
 check_mongodb() {
-    if ! docker ps | grep -q "newyears-mongodb"; then
+    if ! docker ps | grep -q "dhisppo-mongodb"; then
         echo -e "${RED}MongoDB container is not running. Please run './scripts/start.sh' first.${NC}"
         exit 1
     fi
@@ -61,7 +71,7 @@ show_all_collections() {
     echo -e "${BLUE}Showing all collections in database...${NC}"
     echo "----------------------------------------"
     
-    docker exec newyears-mongodb mongosh \
+    docker exec dhisppo-mongodb mongosh \
         --host "$DB_HOST:$DB_PORT" \
         -u "$DB_USER" \
         -p "$DB_PASS" \
@@ -81,7 +91,7 @@ query_collection() {
     echo -e "${YELLOW}Query: $query${NC}"
     echo "----------------------------------------"
     
-    docker exec newyears-mongodb mongosh \
+    docker exec dhisppo-mongodb mongosh \
         --host "$DB_HOST:$DB_PORT" \
         -u "$DB_USER" \
         -p "$DB_PASS" \
@@ -99,7 +109,7 @@ show_collection_stats() {
     echo -e "${BLUE}Statistics for '$collection' collection...${NC}"
     echo "----------------------------------------"
     
-    docker exec newyears-mongodb mongosh \
+    docker exec dhisppo-mongodb mongosh \
         --host "$DB_HOST:$DB_PORT" \
         -u "$DB_USER" \
         -p "$DB_PASS" \

@@ -18,5 +18,13 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
 
+    @property
+    def database_url_masked(self) -> str:
+        if not self.DATABASE_URL:
+            return "Not configured"
+        if "@" in self.DATABASE_URL:
+            return self.DATABASE_URL.split("@")[0] + "@***"
+        return self.DATABASE_URL
+
 
 settings = Settings()

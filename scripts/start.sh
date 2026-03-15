@@ -1,10 +1,27 @@
 #!/bin/bash
 
-# Docker Compose Script for New Years App
+# Docker Compose Script for D'hisppo
 # This script builds and starts services: database, backend, and frontend
 # Usage: ./start.sh [--all]
 
 set -e
+
+# Load environment variables from .env file
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+
+if [[ -f "$PROJECT_DIR/.env" ]]; then
+    set -a
+    source "$PROJECT_DIR/.env"
+    set +a
+fi
+
+# Set defaults for MongoDB if not defined in .env
+MONGO_HOST="${MONGO_HOST:-localhost}"
+MONGO_PORT="${MONGO_PORT:-27017}"
+MONGO_DB="${MONGO_DB:-dhisppo_db}"
+MONGO_USER="${MONGO_USER:-root}"
+MONGO_PASS="${MONGO_PASS:-password}"
 
 # Colors
 RED='\033[0;31m'
@@ -17,14 +34,20 @@ NC='\033[0m' # No Color
 RESTART_ALL=false
 if [[ "$1" == "--all" ]]; then
     RESTART_ALL=true
-    echo -e "${BLUE}Starting New Years App with Docker Compose (--all flag: restart all services)...${NC}"
+    echo -e "${BLUE}Starting D'hisppo with Docker Compose (--all flag: restart all services)...${NC}"
 else
-    echo -e "${BLUE}Starting New Years App with Docker Compose (without --all: preserve database if running)...${NC}"
+    echo -e "${BLUE}Starting D'hisppo with Docker Compose (without --all: preserve database if running)...${NC}"
 fi
 
 # Function to check if MongoDB container is running
 is_mongodb_running() {
-    docker ps --format "{{.Names}} {{.Status}}" | grep -q "newyears-mongodb.*Up"
+    docker ps --format "{{.Names}} {{.Status}}" | grep -q "dhisppo-mongodb.*Up"
+    return $?
+}
+
+# Function to check if MongoDB container exists (even if stopped)
+mongodb_exists() {
+    docker ps -a --format "{{.Names}}" | grep -q "dhisppo-mongodb"
     return $?
 }
 
@@ -34,17 +57,17 @@ stop_services() {
         echo -e "${YELLOW}Stopping all containers...${NC}"
         docker-compose down 2>/dev/null || {
             echo -e "${YELLOW}Using direct Docker commands...${NC}"
-            docker stop newyears-frontend newyears-backend newyears-mongodb 2>/dev/null || true
-            docker rm newyears-frontend newyears-backend newyears-mongodb 2>/dev/null || true
+            docker stop dhisppo-frontend dhisppo-backend dhisppo-mongodb 2>/dev/null || true
+            docker rm dhisppo-frontend dhisppo-backend dhisppo-mongodb 2>/dev/null || true
         }
     else
         echo -e "${YELLOW}Stopping frontend and backend containers (preserving database if running)...${NC}"
         docker-compose stop frontend backend 2>/dev/null || {
             echo -e "${YELLOW}Using direct Docker commands...${NC}"
-            docker stop newyears-frontend newyears-backend 2>/dev/null || true
+            docker stop dhisppo-frontend dhisppo-backend 2>/dev/null || true
         }
         docker-compose rm -f frontend backend 2>/dev/null || {
-            docker rm newyears-frontend newyears-backend 2>/dev/null || true
+            docker rm dhisppo-frontend dhisppo-backend 2>/dev/null || true
         }
     fi
 }
@@ -52,27 +75,30 @@ stop_services() {
 # Function to start database if needed
 start_database_if_needed() {
     if [[ "$RESTART_ALL" == false ]]; then
-        if ! is_mongodb_running; then
+        if is_mongodb_running; then
+            echo -e "${GREEN}✓ MongoDB already running, preserving existing data${NC}"
+        elif mongodb_exists; then
+            echo -e "${YELLOW}MongoDB container exists but stopped, starting it...${NC}"
+            docker start dhisppo-mongodb
+            echo -e "${BLUE}Waiting for MongoDB to be ready...${NC}"
+            sleep 10
+        else
             echo -e "${YELLOW}Database not running, starting MongoDB...${NC}"
-            # Clean up any existing stopped container with the same name
-            docker container rm newyears-mongodb 2>/dev/null || true
             docker-compose up -d mongodb 2>/dev/null || {
                 echo -e "${YELLOW}Using direct Docker command for MongoDB...${NC}"
-                docker network inspect newyears-network >/dev/null 2>&1 || docker network create newyears-network
+                docker network inspect dhisppo-network >/dev/null 2>&1 || docker network create dhisppo-network
                 docker volume inspect mongodb_data >/dev/null 2>&1 || docker volume create mongodb_data
-                docker run -d --name newyears-mongodb --restart unless-stopped \
-                    -e MONGO_INITDB_ROOT_USERNAME=root \
-                    -e MONGO_INITDB_ROOT_PASSWORD=password \
-                    -e MONGO_INITDB_DATABASE=newyears_db \
-                    -p 27017:27017 \
+                docker run -d --name dhisppo-mongodb --restart unless-stopped \
+                    -e MONGO_INITDB_ROOT_USERNAME="$MONGO_USER" \
+                    -e MONGO_INITDB_ROOT_PASSWORD="$MONGO_PASS" \
+                    -e MONGO_INITDB_DATABASE="$MONGO_DB" \
+                    -p "${MONGO_PORT:-27017}:27017" \
                     -v mongodb_data:/data/db \
-                    --network newyears-network \
+                    --network dhisppo-network \
                     mongo:7
             }
             echo -e "${BLUE}Waiting for MongoDB to be ready...${NC}"
             sleep 10
-        else
-            echo -e "${GREEN}✓ MongoDB already running, preserving existing data${NC}"
         fi
     fi
 }
@@ -141,7 +167,7 @@ fi
 
 # Show running containers
 echo -e "${BLUE}Running containers:${NC}"
-docker ps --filter "name=newyears-"
+docker ps --filter "name=dhisppo-"
 
 echo ""
 if [[ "$RESTART_ALL" == true ]]; then
