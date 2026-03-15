@@ -184,6 +184,7 @@ const props = withDefaults(defineProps<{
     useTextarea?: boolean;
     inputSeparator?: string;
     useLocationTags?: boolean;
+    currentUsername?: string;
     submitLabel?: string;
     organizersLabel?: string;
     locationsLabel?: string;
@@ -291,13 +292,26 @@ const handleSubmit = () => {
 
     // Get organizers from text - always process it
     const organizersText = String(localOrganizersText || "");
-    const organizers = organizersText
+    const organizersFromText = organizersText
         .split(props.inputSeparator)
         .map((line: string) => line.trim())
         .filter((line: string) => line.length > 0);
     
-    // Also include any organizers directly in localEvent.organizers
-    const allOrganizers = [...new Set([...organizers, ...(localEvent.organizers || [])])];
+    // Make sure all organizers are strings (not objects)
+    const existingOrganizers = (localEvent.organizers || []).map((org: any) => 
+        typeof org === 'string' ? org : String(org)
+    );
+    
+    // Combine and deduplicate - filter out any [object Object] values
+    // Also filter out currentUsername (backend will add it automatically)
+    const allOrganizers = [...new Set([
+        ...organizersFromText, 
+        ...existingOrganizers
+    ])].filter((org: string) => 
+        org && 
+        org !== '[object Object]' && 
+        org !== props.currentUsername
+    );
 
     const eventData: EventCreate = {
         name: localEvent.name,

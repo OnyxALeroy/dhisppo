@@ -268,6 +268,7 @@
           :use-textarea="false"
           :use-location-tags="true"
           input-separator=","
+          :current-username="authStore.user?.username"
           submit-label="Create Event"
           @submit="handleSaveEvent"
           @cancel="closeModal"
@@ -359,7 +360,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive } from 'vue';
+import { ref, computed, onMounted, reactive, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useEventStore } from '@/stores/events';
@@ -542,11 +543,12 @@ const handleSaveEvent = async (eventData: EventCreate) => {
 };
 
 // Modal management
-const openCreateModal = () => {
-  if (authStore.user) {
+const openCreateModal = async () => {
+  showCreateModal.value = true;
+  await nextTick();
+  if (authStore.user?.username) {
     eventFormRef.value?.setInitialOrganizers(authStore.user.username);
   }
-  showCreateModal.value = true;
 };
 
 const closeModal = () => {

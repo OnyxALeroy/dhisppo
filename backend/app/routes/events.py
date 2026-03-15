@@ -15,8 +15,10 @@ router = APIRouter(prefix="/events", tags=["events"])
 async def create_event(
     event: EventCreate, current_user: dict = Depends(get_organizer_or_admin_user)
 ):
-    username = current_user["username"]
-    if username not in event.organizers:
+    username = str(current_user["username"]) if current_user.get("username") else ""
+    # Ensure organizers are all strings
+    event.organizers = [str(org) for org in event.organizers if org]
+    if username and username not in event.organizers:
         event.organizers.append(username)
     db_event = await event_crud.create_event(event)
     return EventResponse(

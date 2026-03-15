@@ -313,6 +313,7 @@
                     ref="createEventFormRef"
                     :use-textarea="false"
                     input-separator=","
+                    :current-username="authStore.user?.username"
                     submit-label="Create Event"
                     organizers-label="Organizers (comma separated)"
                     locations-label="Locations (comma separated)"

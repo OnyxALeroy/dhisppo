@@ -209,6 +209,7 @@
                 <EventForm
                     ref="createEventFormRef"
                     :use-textarea="true"
+                    :current-username="authStore.user?.username"
                     submit-label="Create Event"
                     @submit="handleCreateEvent"
                     @cancel="closeModal"
@@ -530,7 +531,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, reactive } from "vue";
+import { ref, onMounted, computed, watch, reactive, nextTick } from "vue";
 import { useEventStore } from "@/stores/events";
 import { useAuthStore } from "@/stores/auth";
 import EventForm from "@/components/EventForm.vue";
@@ -621,11 +622,12 @@ const deleteEvent = async (id: string) => {
     }
 };
 
-const openCreateModal = () => {
-    if (authStore.user) {
+const openCreateModal = async () => {
+    showCreateForm.value = true;
+    await nextTick();
+    if (authStore.user?.username) {
         createEventFormRef.value?.setInitialOrganizers(authStore.user.username);
     }
-    showCreateForm.value = true;
 };
 
 const viewDetails = (event: Event) => {
