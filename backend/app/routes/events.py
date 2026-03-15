@@ -276,6 +276,54 @@ async def add_participant(
         updated_at=updated_event.get("updated_at"),
     )
 
+@router.delete("/{event_id}/participants/{user_id}", response_model=EventResponse)
+async def delete_participant(
+    event_id: str,
+    user_id: str,
+    current_user: dict = Depends(get_current_user_auth)
+):
+    username = current_user["username"]
+    role = current_user.get("role", "user")
+    
+    # Only allow users to remove themselves, or admins to remove anyone
+    if role != "admin" and username != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only remove yourself from an event",
+        )
+    
+    updated_event = await event_crud.remove_participant(event_id, user_id)
+    if not updated_event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Event not found or participant not in event",
+        )
+
+    return EventResponse(
+        id=str(updated_event["_id"]),
+        name=updated_event.get("name", ""),
+        organizers=updated_event.get("organizers", []),
+        locations=updated_event.get("locations", []),
+        description=updated_event.get("description", ""),
+        start_date=updated_event["start_date"],
+        end_date=updated_event.get("end_date"),
+        start_time=updated_event["start_time"],
+        end_time=updated_event.get("end_time"),
+        images=updated_event.get("images", []),
+        notes=updated_event.get("notes", []),
+        visibility=updated_event.get("visibility", "public"),
+        participants=[
+            Participant(**p)
+            for p in updated_event.get("participants", [])
+        ],
+        payments=[
+            PaymentInDB(**payment)
+            for payment in updated_event.get("payments", [])
+        ],
+        created_at=updated_event["created_at"],
+        updated_at=updated_event.get("updated_at"),
+    )
+
 @router.patch(
     "/{event_id}/participants/{user_id}/payment", response_model=EventResponse
 )

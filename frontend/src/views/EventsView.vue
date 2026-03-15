@@ -181,6 +181,28 @@
                 </div>
 
                 <div class="event-actions">
+                    <button
+                        v-if="canJoinEvent(event)"
+                        @click="joinEvent(event)"
+                        class="join-btn"
+                    >
+                        Join Event
+                    </button>
+                    <button
+                        v-if="canUnjoinEvent(event)"
+                        @click="unjoinEvent(event)"
+                        class="unjoin-btn"
+                    >
+                        Leave Event
+                    </button>
+                    <button
+                        v-if="isOrganizer(event)"
+                        class="join-btn disabled"
+                        disabled
+                        title="Organizers cannot leave their own event"
+                    >
+                        Organizer
+                    </button>
                     <button @click="viewDetails(event)" class="details-btn">
                         View Details
                     </button>
@@ -535,7 +557,8 @@ import { ref, onMounted, computed, watch, reactive, nextTick } from "vue";
 import { useEventStore } from "@/stores/events";
 import { useAuthStore } from "@/stores/auth";
 import EventForm from "@/components/EventForm.vue";
-import type { Event, EventCreate } from "@/types";
+import { eventsAPI } from "@/utils/api";
+import type { Event, EventCreate, Participant } from "@/types";
 
 const eventStore = useEventStore();
 const authStore = useAuthStore();
@@ -737,6 +760,55 @@ const isParticipant = (event: Event): boolean => {
     return event.participants.some(
         (p) => p.user_id === authStore.user?.username,
     );
+};
+
+const canJoinEvent = (event: Event): boolean => {
+    if (!authStore.user) return false;
+    if (isParticipant(event)) return false;
+    if (isOrganizer(event)) return false;
+    return event.visibility === "public";
+};
+
+const canUnjoinEvent = (event: Event): boolean => {
+    if (!authStore.user) return false;
+    if (isParticipant(event) && !isOrganizer(event)) return true;
+    return false;
+};
+
+const isOrganizer = (event: Event): boolean => {
+    if (!authStore.user) return false;
+    return event.organizers.includes(authStore.user.username);
+};
+
+const joinEvent = async (event: Event) => {
+    if (!authStore.user) return;
+    
+    const participant: Participant = {
+        user_id: authStore.user.username,
+        due_payment: 0,
+        paid_amount: 0,
+        tags: [],
+    };
+    
+    try {
+        await eventsAPI.addParticipant(event.id, participant);
+        await eventStore.fetchEvents();
+    } catch (error) {
+        console.error("Failed to join event:", error);
+    }
+};
+
+const unjoinEvent = async (event: Event) => {
+    if (!authStore.user) return;
+    
+    if (!confirm("Are you sure you want to leave this event?")) return;
+    
+    try {
+        await eventsAPI.removeParticipant(event.id, authStore.user.username);
+        await eventStore.fetchEvents();
+    } catch (error) {
+        console.error("Failed to leave event:", error);
+    }
 };
 
 const totalDue = (event: Event): number => {
@@ -1066,6 +1138,49 @@ watch(editNotesText, (newText) => {
 
 .details-btn:hover {
     background: #667eea;
+    color: white;
+}
+
+.join-btn {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid #27ae60;
+    background: white;
+    color: #27ae60;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.join-btn:hover {
+    background: #27ae60;
+    color: white;
+}
+
+.join-btn.disabled {
+    border-color: #ccc;
+    color: #999;
+    cursor: not-allowed;
+}
+
+.join-btn.disabled:hover {
+    background: white;
+    color: #999;
+}
+
+.unjoin-btn {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid #e74c3c;
+    background: white;
+    color: #e74c3c;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.unjoin-btn:hover {
+    background: #e74c3c;
     color: white;
 }
 
