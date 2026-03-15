@@ -3,8 +3,8 @@
         <nav class="navbar">
             <div class="nav-brand">
                 <router-link to="/" class="brand-link">
-                    <span class="brand-icon">✨</span>
-                    <span class="brand-text">EventHub</span>
+                    <img src="/logo.png" alt="Dhisppo" class="brand-logo" />
+                    <span class="brand-text">Dhisppo</span>
                 </router-link>
             </div>
 
@@ -88,7 +88,7 @@ const unreadCount = computed(() => notificationStore.calculateUnreadCount);
 
 const logout = () => {
     authStore.logout();
-    router.push("/");
+    router.push("/login");
 };
 
 onMounted(async () => {
@@ -188,6 +188,11 @@ onUnmounted(() => {
 
 .nav-brand .brand-link:hover {
     opacity: 0.8;
+}
+
+.brand-logo {
+    height: 32px;
+    width: auto;
 }
 
 .brand-icon {

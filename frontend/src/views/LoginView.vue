@@ -5,15 +5,16 @@
             <div class="bg-shape shape-2"></div>
             <div class="bg-shape shape-3"></div>
         </div>
-        
+
         <div class="login-card">
             <div class="login-header">
                 <div class="login-logo">
-                    <span class="logo-icon">✨</span>
-                    <span class="logo-text">EventHub</span>
+                    <img src="/big-logo.png" alt="Dhisppo" class="logo-img" />
                 </div>
                 <h1 class="login-title">Welcome back</h1>
-                <p class="login-subtitle">Sign in to your account to continue</p>
+                <p class="login-subtitle">
+                    Sign in to your account to continue
+                </p>
             </div>
 
             <form @submit.prevent="handleLogin" class="login-form">
@@ -60,8 +61,10 @@
 
             <div class="login-footer">
                 <p>
-                    New to EventHub?
-                    <router-link to="/register" class="link">Create an account</router-link>
+                    New to Dhisppo?
+                    <router-link to="/register" class="link"
+                        >Create an account</router-link
+                    >
                 </p>
             </div>
         </div>
@@ -103,11 +106,15 @@ const handleLogin = async () => {
 <style scoped>
 .login-container {
     min-height: 100vh;
-    background: linear-gradient(135deg, var(--primary-50) 0%, var(--white) 100%);
+    background: linear-gradient(
+        135deg,
+        var(--primary-50) 0%,
+        var(--white) 100%
+    );
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2rem;
+    padding: 0.5rem;
     position: relative;
     overflow: hidden;
 }
@@ -166,7 +173,7 @@ const handleLogin = async () => {
 
 .login-header {
     text-align: center;
-    margin-bottom: 2.5rem;
+    margin-bottom: 1.5rem;
 }
 
 .login-logo {
@@ -174,7 +181,12 @@ const handleLogin = async () => {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.logo-img {
+    height: 200px;
+    width: auto;
 }
 
 .logo-icon {
@@ -321,7 +333,8 @@ const handleLogin = async () => {
 }
 
 @keyframes float {
-    0%, 100% {
+    0%,
+    100% {
         transform: translateY(0px) rotate(0deg);
     }
     50% {
@@ -348,7 +361,9 @@ const handleLogin = async () => {
         font-size: 1.5rem;
     }
 
-    .shape-1, .shape-2, .shape-3 {
+    .shape-1,
+    .shape-2,
+    .shape-3 {
         display: none;
     }
 }

@@ -49,8 +49,3 @@ npm run dev
 
 ## API Documentation
 Once running, visit http://localhost:8000/docs for interactive API documentation.
-
-## Roadmap
-
-* [ ] Updating the User page, and **make (public) events joinable**
-* [ ] Double-checking the different menu / filters values
