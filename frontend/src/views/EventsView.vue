@@ -201,132 +201,13 @@
         <div v-if="showCreateForm" class="modal-overlay" @click="closeModal">
             <div class="modal" @click.stop>
                 <h2>Create New Event</h2>
-                <form @submit.prevent="createEvent">
-                    <div class="form-group">
-                        <label for="name">Event Name</label>
-                        <input
-                            type="text"
-                            id="name"
-                            v-model="newEvent.name"
-                            required
-                            placeholder="Enter event name..."
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="description">Description</label>
-                        <textarea
-                            id="description"
-                            v-model="newEvent.description"
-                            rows="3"
-                            required
-                            placeholder="Describe the event..."
-                        ></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="visibility">Visibility</label>
-                        <select id="visibility" v-model="newEvent.visibility">
-                            <option value="public">Public - Anyone can find and join</option>
-                            <option value="private">Private - Only invited users can join</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="organizers"
-                            >Organizers (one per line)</label
-                        >
-                        <textarea
-                            id="organizers"
-                            v-model="organizersText"
-                            rows="3"
-                            required
-                            placeholder="Enter organizer names (one per line)"
-                        ></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="locations">Locations (one per line)</label>
-                        <textarea
-                            id="locations"
-                            v-model="locationsText"
-                            rows="3"
-                            required
-                            placeholder="Enter locations (one per line)"
-                        ></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="start_date">Start Date</label>
-                        <input
-                            type="date"
-                            id="start_date"
-                            v-model="newEvent.start_date"
-                            :min="new Date().toISOString().split('T')[0]"
-                            required
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="end_date"
-                            >End Date (optional for multi-day events)</label
-                        >
-                        <input
-                            type="date"
-                            id="end_date"
-                            v-model="newEvent.end_date"
-                            :min="newEvent.start_date"
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="start_time">Start Time</label>
-                        <input
-                            type="time"
-                            id="start_time"
-                            v-model="newEvent.start_time"
-                            required
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="end_time">End Time (optional)</label>
-                        <input
-                            type="time"
-                            id="end_time"
-                            v-model="newEvent.end_time"
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="notes"
-                            >Notes (one per line, optional)</label
-                        >
-                        <textarea
-                            id="notes"
-                            v-model="notesText"
-                            rows="3"
-                            placeholder="Enter any additional notes..."
-                        ></textarea>
-                    </div>
-
-                    <div class="modal-actions">
-                        <button
-                            type="button"
-                            @click="closeModal"
-                            class="cancel-btn"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            :disabled="!isFormValid"
-                            class="submit-btn"
-                        >
-                            Create Event
-                        </button>
-                    </div>
-                </form>
+                <EventForm
+                    ref="createEventFormRef"
+                    :use-textarea="true"
+                    submit-label="Create Event"
+                    @submit="handleCreateEvent"
+                    @cancel="closeModal"
+                />
             </div>
         </div>
 
@@ -644,13 +525,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive, computed, watch } from "vue";
+import { ref, onMounted, computed, watch, reactive } from "vue";
 import { useEventStore } from "@/stores/events";
 import { useAuthStore } from "@/stores/auth";
-import type { Event, EventCreate, Participant } from "@/types";
+import EventForm from "@/components/EventForm.vue";
+import type { Event, EventCreate } from "@/types";
 
 const eventStore = useEventStore();
 const authStore = useAuthStore();
+
+const createEventFormRef = ref<InstanceType<typeof EventForm> | null>(null);
 
 const events = computed(() => eventStore.events);
 const loading = computed(() => eventStore.loading);
@@ -674,23 +558,6 @@ const editingEventData = reactive({
     notes: [] as string[],
     visibility: "public" as "public" | "private",
 });
-
-const newEvent = reactive({
-    name: "",
-    description: "",
-    organizers: [] as string[],
-    locations: [] as string[],
-    start_date: "",
-    end_date: "",
-    start_time: "",
-    end_time: "",
-    notes: [] as string[],
-    visibility: "public" as "public" | "private",
-});
-
-const organizersText = ref("");
-const locationsText = ref("");
-const notesText = ref("");
 
 const editOrganizersText = ref("");
 const editLocationsText = ref("");
@@ -718,51 +585,12 @@ const filteredEvents = computed(() => {
     return filtered;
 });
 
-const isFormValid = computed(() => {
-    return (
-        newEvent.name.trim() &&
-        newEvent.description.trim() &&
-        newEvent.organizers.length > 0 &&
-        newEvent.locations.length > 0 &&
-        newEvent.start_date &&
-        newEvent.start_time
-    );
-});
-
-const minDateTime = computed(() => {
-    const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    return now.toISOString().slice(0, 16);
-});
-
 onMounted(() => {
     eventStore.fetchEvents();
 });
 
-const createEvent = async () => {
+const handleCreateEvent = async (eventData: EventCreate) => {
     try {
-        // Build event data, filtering out undefined values
-        const eventData: any = {
-            name: newEvent.name,
-            description: newEvent.description,
-            organizers: newEvent.organizers,
-            locations: newEvent.locations,
-            start_date: newEvent.start_date,
-            start_time: newEvent.start_time + ":00", // Ensure HH:MM:SS format
-            visibility: newEvent.visibility,
-        };
-
-        // Only include optional fields if they have values
-        if (newEvent.end_date) {
-            eventData.end_date = newEvent.end_date;
-        }
-        if (newEvent.end_time) {
-            eventData.end_time = newEvent.end_time + ":00";
-        }
-        if (newEvent.notes.length > 0) {
-            eventData.notes = newEvent.notes;
-        }
-
         console.log("Sending event data:", eventData);
         await eventStore.createEvent(eventData);
         closeModal();
@@ -783,7 +611,7 @@ const deleteEvent = async (id: string) => {
 
 const openCreateModal = () => {
     if (authStore.user) {
-        organizersText.value = authStore.user.username;
+        createEventFormRef.value?.setInitialOrganizers(authStore.user.username);
     }
     showCreateForm.value = true;
 };
@@ -794,19 +622,7 @@ const viewDetails = (event: Event) => {
 
 const closeModal = () => {
     showCreateForm.value = false;
-    newEvent.name = "";
-    newEvent.description = "";
-    newEvent.organizers = [];
-    newEvent.locations = [];
-    newEvent.start_date = "";
-    newEvent.end_date = "";
-    newEvent.start_time = "";
-    newEvent.end_time = "";
-    newEvent.notes = [];
-    newEvent.visibility = "public";
-    organizersText.value = "";
-    locationsText.value = "";
-    notesText.value = "";
+    createEventFormRef.value?.reset();
 };
 
 const startEditEvent = (event: Event) => {
@@ -940,28 +756,6 @@ const formatTime = (timeString: string) => {
         hour12: true,
     });
 };
-
-// Watch text areas and update arrays
-watch(organizersText, (newText) => {
-    newEvent.organizers = newText
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0);
-});
-
-watch(locationsText, (newText) => {
-    newEvent.locations = newText
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0);
-});
-
-watch(notesText, (newText) => {
-    newEvent.notes = newText
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0);
-});
 
 // Watch edit form text areas and update arrays
 watch(editOrganizersText, (newText) => {

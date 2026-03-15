@@ -309,109 +309,37 @@
         <div v-if="showCreateEventForm" class="modal-overlay" @click="closeCreateEventModal">
             <div class="modal" @click.stop>
                 <h2>Create Event</h2>
-                <form @submit.prevent="createEvent">
-                    <div class="form-group">
-                        <label for="create-event-name">Event Name</label>
-                        <input
-                            id="create-event-name"
-                            v-model="newEvent.name"
-                            type="text"
-                            required
-                            placeholder="Enter event name"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label for="create-description">Description</label>
-                        <textarea
-                            id="create-description"
-                            v-model="newEvent.description"
-                            rows="3"
-                            required
-                            placeholder="Describe the event..."
-                        ></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="create-visibility">Visibility</label>
-                        <select id="create-visibility" v-model="newEvent.visibility">
-                            <option value="public">Public - Anyone can find and join</option>
-                            <option value="private">Private - Only invited users can join</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="create-organizers">Organizers (comma separated)</label>
-                        <input
-                            id="create-organizers"
-                            v-model="createOrganizersText"
-                            type="text"
-                            required
-                            placeholder="Enter organizer names"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label for="create-locations">Locations (comma separated)</label>
-                        <input
-                            id="create-locations"
-                            v-model="createLocationsText"
-                            type="text"
-                            required
-                            placeholder="Enter locations"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label for="create-start-date">Start Date</label>
-                        <input
-                            id="create-start-date"
-                            v-model="newEvent.start_date"
-                            type="date"
-                            required
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label for="create-end-date">End Date (optional)</label>
-                        <input
-                            id="create-end-date"
-                            v-model="newEvent.end_date"
-                            type="date"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label for="create-start-time">Start Time</label>
-                        <input
-                            id="create-start-time"
-                            v-model="newEvent.start_time"
-                            type="time"
-                            required
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label for="create-end-time">End Time (optional)</label>
-                        <input
-                            id="create-end-time"
-                            v-model="newEvent.end_time"
-                            type="time"
-                        />
-                    </div>
-                    <div class="modal-actions">
-                        <button type="button" @click="closeCreateEventModal" class="cancel-btn">
-                            Cancel
-                        </button>
-                        <button type="submit" class="submit-btn">Create Event</button>
-                    </div>
-                </form>
+                <EventForm
+                    ref="createEventFormRef"
+                    :use-textarea="false"
+                    input-separator=","
+                    submit-label="Create Event"
+                    organizers-label="Organizers (comma separated)"
+                    locations-label="Locations (comma separated)"
+                    notes-label="Notes (comma separated, optional)"
+                    organizers-placeholder="Enter organizer names"
+                    locations-placeholder="Enter locations"
+                    notes-placeholder="Enter notes"
+                    @submit="handleCreateEvent"
+                    @cancel="closeCreateEventModal"
+                />
             </div>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, reactive, nextTick } from "vue";
+import { ref, onMounted, computed, reactive } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { useEventStore } from "@/stores/events";
 import { authAPI, eventsAPI } from "@/utils/api";
+import EventForm from "@/components/EventForm.vue";
 import type { User, Event, EventCreate, UserCreate } from "@/types";
 
 const authStore = useAuthStore();
 const eventStore = useEventStore();
+
+const createEventFormRef = ref<InstanceType<typeof EventForm> | null>(null);
 
 const activeTab = ref("users");
 const users = ref<User[]>([]);
@@ -458,23 +386,6 @@ const newUser = reactive<UserCreate>({
 
 // Create event modal
 const showCreateEventForm = ref(false);
-const newEvent = reactive<EventCreate>({
-    name: "",
-    organizers: [],
-    locations: [],
-    description: "",
-    start_date: "",
-    end_date: "",
-    start_time: "",
-    end_time: "",
-    images: [],
-    notes: [],
-    visibility: "public",
-    participants: [],
-});
-
-const createOrganizersText = ref("");
-const createLocationsText = ref("");
 
 onMounted(async () => {
     await Promise.all([fetchUsers(), fetchAllEvents()]);
@@ -631,14 +542,8 @@ const deleteEvent = async (eventId: string) => {
     }
 };
 
-const createEvent = async () => {
+const handleCreateEvent = async (eventData: EventCreate) => {
     try {
-        const eventData = {
-            ...newEvent,
-            organizers: createOrganizersText.value.split(",").map(s => s.trim()).filter(s => s),
-            locations: createLocationsText.value.split(",").map(s => s.trim()).filter(s => s),
-        };
-        
         await eventStore.createEvent(eventData);
         await fetchAllEvents();
         closeCreateEventModal();
@@ -649,16 +554,7 @@ const createEvent = async () => {
 
 const closeCreateEventModal = () => {
     showCreateEventForm.value = false;
-    newEvent.name = "";
-    newEvent.description = "";
-    newEvent.organizers = [];
-    newEvent.locations = [];
-    newEvent.start_date = "";
-    newEvent.end_date = "";
-    newEvent.start_time = "";
-    newEvent.end_time = "";
-    createOrganizersText.value = "";
-    createLocationsText.value = "";
+    createEventFormRef.value?.reset();
 };
 </script>
 
