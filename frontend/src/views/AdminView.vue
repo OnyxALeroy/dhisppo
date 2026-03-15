@@ -331,6 +331,13 @@
                         ></textarea>
                     </div>
                     <div class="form-group">
+                        <label for="create-visibility">Visibility</label>
+                        <select id="create-visibility" v-model="newEvent.visibility">
+                            <option value="public">Public - Anyone can find and join</option>
+                            <option value="private">Private - Only invited users can join</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label for="create-organizers">Organizers (comma separated)</label>
                         <input
                             id="create-organizers"
@@ -462,6 +469,7 @@ const newEvent = reactive<EventCreate>({
     end_time: "",
     images: [],
     notes: [],
+    visibility: "public",
     participants: [],
 });
 

@@ -44,13 +44,41 @@ class EventCRUD:
             event["participants"] = []
         if event and "expenditures" not in event:
             event["expenditures"] = []
+        if event and "visibility" not in event:
+            event["visibility"] = "public"
         return event
+
+    async def can_user_join(
+        self, event_id: str, user_id: str, username: str, role: str
+    ) -> tuple[bool, str]:
+        event = await self.get_event_by_id(event_id)
+        if not event:
+            return False, "Event not found"
+        
+        visibility = event.get("visibility", "public")
+        organizers = event.get("organizers", [])
+        participants = event.get("participants", [])
+        participant_ids = [p.get("user_id") for p in participants]
+        
+        if visibility == "public":
+            return True, "Public event"
+        
+        if role == "admin":
+            return True, "Admin access"
+        
+        if username in organizers:
+            return True, "Organizer access"
+        
+        if user_id in participant_ids:
+            return True, "Already a participant"
+        
+        return False, "Private event - invitation required"
 
     async def get_events(self, skip: int = 0, limit: int = 100) -> List[dict]:
         database = await get_database()
         events = (
             await database[self.collection_name]
-            .find()
+            .find({"visibility": "public"})
             .skip(skip)
             .limit(limit)
             .to_list(length=limit)
@@ -62,6 +90,45 @@ class EventCRUD:
                 event["participants"] = []
             if "expenditures" not in event:
                 event["expenditures"] = []
+        return events
+
+    async def get_events_for_user(
+        self, user_id: str, username: str, role: str, skip: int = 0, limit: int = 100
+    ) -> List[dict]:
+        database = await get_database()
+        
+        if role == "admin":
+            events = (
+                await database[self.collection_name]
+                .find()
+                .skip(skip)
+                .limit(limit)
+                .to_list(length=limit)
+            )
+        else:
+            events = (
+                await database[self.collection_name]
+                .find({
+                    "$or": [
+                        {"visibility": "public"},
+                        {"organizers": username},
+                        {"participants.user_id": user_id}
+                    ]
+                })
+                .skip(skip)
+                .limit(limit)
+                .to_list(length=limit)
+            )
+        
+        for event in events:
+            if "payments" not in event:
+                event["payments"] = []
+            if "participants" not in event:
+                event["participants"] = []
+            if "expenditures" not in event:
+                event["expenditures"] = []
+            if "visibility" not in event:
+                event["visibility"] = "public"
         return events
 
     async def get_events_by_organizer(

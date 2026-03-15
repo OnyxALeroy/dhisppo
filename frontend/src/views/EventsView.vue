@@ -51,6 +51,12 @@
                     <p class="event-description">{{ event.description }}</p>
                     <div class="event-badges">
                         <span
+                            v-if="event.visibility === 'private'"
+                            class="badge private"
+                        >
+                            Private
+                        </span>
+                        <span
                             v-if="
                                 authStore.user &&
                                 event.organizers.includes(
@@ -219,6 +225,14 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="visibility">Visibility</label>
+                        <select id="visibility" v-model="newEvent.visibility">
+                            <option value="public">Public - Anyone can find and join</option>
+                            <option value="private">Private - Only invited users can join</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
                         <label for="organizers"
                             >Organizers (one per line)</label
                         >
@@ -341,6 +355,14 @@
                             required
                             placeholder="Describe the event..."
                         ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-visibility">Visibility</label>
+                        <select id="edit-visibility" v-model="editingEventData.visibility">
+                            <option value="public">Public - Anyone can find and join</option>
+                            <option value="private">Private - Only invited users can join</option>
+                        </select>
                     </div>
 
                     <div class="form-group">
@@ -650,6 +672,7 @@ const editingEventData = reactive({
     start_time: "",
     end_time: "",
     notes: [] as string[],
+    visibility: "public" as "public" | "private",
 });
 
 const newEvent = reactive({
@@ -662,6 +685,7 @@ const newEvent = reactive({
     start_time: "",
     end_time: "",
     notes: [] as string[],
+    visibility: "public" as "public" | "private",
 });
 
 const organizersText = ref("");
@@ -725,6 +749,7 @@ const createEvent = async () => {
             locations: newEvent.locations,
             start_date: newEvent.start_date,
             start_time: newEvent.start_time + ":00", // Ensure HH:MM:SS format
+            visibility: newEvent.visibility,
         };
 
         // Only include optional fields if they have values
@@ -778,6 +803,7 @@ const closeModal = () => {
     newEvent.start_time = "";
     newEvent.end_time = "";
     newEvent.notes = [];
+    newEvent.visibility = "public";
     organizersText.value = "";
     locationsText.value = "";
     notesText.value = "";
@@ -797,6 +823,7 @@ const startEditEvent = (event: Event) => {
         ? event.end_time.substring(0, 5)
         : "";
     editingEventData.notes = [...event.notes];
+    editingEventData.visibility = (event.visibility as "public" | "private") || "public";
 
     editOrganizersText.value = event.organizers.join("\n");
     editLocationsText.value = event.locations.join("\n");
@@ -817,6 +844,7 @@ const updateEvent = async () => {
             locations: editingEventData.locations,
             start_date: editingEventData.start_date,
             start_time: editingEventData.start_time + ":00", // Ensure HH:MM:SS format
+            visibility: editingEventData.visibility,
         };
 
         // Only include optional fields if they have values
@@ -850,6 +878,7 @@ const closeEditModal = () => {
     editingEventData.start_time = "";
     editingEventData.end_time = "";
     editingEventData.notes = [];
+    editingEventData.visibility = "public";
     editOrganizersText.value = "";
     editLocationsText.value = "";
     editNotesText.value = "";
@@ -1150,6 +1179,11 @@ watch(editNotesText, (newText) => {
     color: #1976d2;
 }
 
+.badge.private {
+    background: #fff3e0;
+    color: #e65100;
+}
+
 .event-section {
     margin-bottom: 1rem;
 }
@@ -1419,7 +1453,8 @@ watch(editNotesText, (newText) => {
 }
 
 .form-group textarea,
-.form-group input {
+.form-group input,
+.form-group select {
     width: 100%;
     padding: 0.75rem;
     border: 2px solid #e1e5e9;
@@ -1433,7 +1468,8 @@ watch(editNotesText, (newText) => {
 }
 
 .form-group textarea:focus,
-.form-group input:focus {
+.form-group input:focus,
+.form-group select:focus {
     outline: none;
     border-color: #667eea;
 }

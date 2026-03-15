@@ -26,6 +26,7 @@ class EventBase(BaseModel):
     end_time: Optional[time] = Field(None, description="Event end time (optional)")
     images: List[str] = Field(default_factory=list)
     notes: List[str] = Field(default_factory=list)
+    visibility: str = Field(default="public", description="Event visibility: 'public' or 'private'")
 
 
 class EventCreate(EventBase):
@@ -45,6 +46,7 @@ class EventUpdate(BaseModel):
     end_time: Optional[time] = None
     images: Optional[List[str]] = None
     notes: Optional[List[str]] = None
+    visibility: Optional[str] = None
     participants: Optional[List[Participant]] = None
     payments: Optional[List[PaymentInDB]] = None
     expenditures: Optional[List[ExpenditureInDB]] = None
@@ -52,6 +54,7 @@ class EventUpdate(BaseModel):
 
 class EventInDB(EventBase):
     id: str
+    visibility: str = "public"
     participants: List[Participant]
     payments: List[PaymentInDB] = Field(default_factory=list)
     expenditures: List[ExpenditureInDB] = Field(default_factory=list)
@@ -74,6 +77,7 @@ class EventResponse(BaseModel):
     end_time: Optional[time] = None
     images: List[str]
     notes: List[str]
+    visibility: str = "public"
     participants: List[Participant]
     payments: List[PaymentInDB] = Field(default_factory=list)
     expenditures: List[ExpenditureInDB] = Field(default_factory=list)

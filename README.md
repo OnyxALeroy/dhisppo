@@ -52,8 +52,6 @@ Once running, visit http://localhost:8000/docs for interactive API documentation
 
 ## Roadmap
 
-[ ] Création d'Event : visibilité (public / privé):
-  - un organisateur peut tjs ajouter quelqu'un
-  - seuls les events publics peuvent être vu par les users normaux
-[ ] Update la page utilisateurs
-[ ] Faire des fix sur les différents menus et filtres
+* [ ] Adding visibility to events: private event can't be joined except if invited by an admin or any of the event organizers ; public is joinable by anyone, and findable in the Event screen.
+* [ ] Updating the User page, and **make (public) events joinable**
+* [ ] Double-checking the different menu / filters values

@@ -279,6 +279,14 @@
           </div>
 
           <div class="form-group">
+            <label for="eventVisibility">Visibility</label>
+            <select id="eventVisibility" v-model="eventForm.visibility">
+              <option value="public">Public - Anyone can find and join</option>
+              <option value="private">Private - Only invited users can join</option>
+            </select>
+          </div>
+
+          <div class="form-group">
             <label for="eventLocation">Location</label>
             <input 
               id="eventLocation"
@@ -484,7 +492,8 @@ const eventForm = reactive({
   start_time: '',
   end_time: '',
   notes: [] as string[],
-  images: [] as string[]
+  images: [] as string[],
+  visibility: 'public' as 'public' | 'private'
 });
 
 const eventLocationInput = ref('');
@@ -662,7 +671,8 @@ const resetEventForm = () => {
     start_time: '',
     end_time: '',
     notes: [],
-    images: []
+    images: [],
+    visibility: 'public'
   });
   eventLocationInput.value = '';
   eventNotesInput.value = '';
@@ -1115,7 +1125,8 @@ onMounted(async () => {
 }
 
 .form-group input,
-.form-group textarea {
+.form-group textarea,
+.form-group select {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid #ddd;
@@ -1126,6 +1137,14 @@ onMounted(async () => {
 .form-group textarea {
   min-height: 100px;
   resize: vertical;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
 }
 
 .form-row {

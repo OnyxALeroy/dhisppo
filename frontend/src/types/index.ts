@@ -51,6 +51,7 @@ export interface Event {
   end_time?: string;
   images: string[];
   notes: string[];
+  visibility: "public" | "private";
   participants: Participant[];
   payments: Payment[];
   expenditures?: Expenditure[];
@@ -69,6 +70,7 @@ export interface EventCreate {
   end_time?: string;
   images?: string[];
   notes?: string[];
+  visibility?: "public" | "private";
   participants?: Participant[];
   payments?: Payment[];
   expenditures?: Expenditure[];
@@ -85,6 +87,7 @@ export interface EventUpdate {
   end_time?: string;
   images?: string[];
   notes?: string[];
+  visibility?: "public" | "private";
   participants?: Participant[];
   payments?: Payment[];
   expenditures?: Expenditure[];

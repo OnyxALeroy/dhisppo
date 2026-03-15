@@ -31,6 +31,7 @@ async def create_event(
         end_time=db_event.get("end_time"),
         images=db_event.get("images", []),
         notes=db_event.get("notes", []),
+        visibility=db_event.get("visibility", "public"),
         participants=[
             Participant(**participant)
             for participant in db_event.get("participants", [])
@@ -47,11 +48,17 @@ async def get_events(
     limit: int = 100,
     organizer: Optional[str] = None,
     location: Optional[str] = None,
+    current_user: Optional[dict] = Depends(get_current_user_auth),
 ):
     if organizer:
         events = await event_crud.get_events_by_organizer(organizer, skip, limit)
     elif location:
         events = await event_crud.get_events_by_location(location, skip, limit)
+    elif current_user:
+        user_id = str(current_user["_id"])
+        username = current_user["username"]
+        role = current_user.get("role", "user")
+        events = await event_crud.get_events_for_user(user_id, username, role, skip, limit)
     else:
         events = await event_crud.get_events(skip, limit)
 
@@ -68,6 +75,7 @@ async def get_events(
             end_time=event.get("end_time"),
             images=event.get("images", []),
             notes=event.get("notes", []),
+            visibility=event.get("visibility", "public"),
             participants=[
                 Participant(**participant)
                 for participant in event.get("participants", [])
@@ -84,11 +92,33 @@ async def get_events(
 
 
 @router.get("/{event_id}", response_model=EventResponse)
-async def get_event(event_id: str):
+async def get_event(
+    event_id: str,
+    current_user: Optional[dict] = Depends(get_current_user_auth)
+):
     event = await event_crud.get_event_by_id(event_id)
     if not event:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
+        )
+
+    visibility = event.get("visibility", "public")
+    if visibility == "private" and current_user:
+        user_id = str(current_user["_id"])
+        username = current_user["username"]
+        role = current_user.get("role", "user")
+        organizers = event.get("organizers", [])
+        participants = [p.get("user_id") for p in event.get("participants", [])]
+        
+        if role != "admin" and username not in organizers and user_id not in participants:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have access to this private event"
+            )
+    elif visibility == "private" and not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Login required to access private event"
         )
 
     # Build payments safely
@@ -113,6 +143,7 @@ async def get_event(event_id: str):
         end_time=event.get("end_time"),
         images=event.get("images", []),
         notes=event.get("notes", []),
+        visibility=visibility,
         participants=[
             Participant(**participant) for participant in event.get("participants", [])
         ],
@@ -164,9 +195,75 @@ async def update_event(
         end_time=updated_event.get("end_time"),
         images=updated_event.get("images", []),
         notes=updated_event.get("notes", []),
+        visibility=updated_event.get("visibility", "public"),
         participants=[
             Participant(**participant)
             for participant in updated_event.get("participants", [])
+        ],
+        payments=[
+            PaymentInDB(**payment)
+            for payment in updated_event.get("payments", [])
+        ],
+        created_at=updated_event["created_at"],
+        updated_at=updated_event.get("updated_at"),
+    )
+
+@router.post("/{event_id}/participants", response_model=EventResponse)
+async def add_participant(
+    event_id: str,
+    participant: Participant,
+    current_user: dict = Depends(get_current_user_auth)
+):
+    event = await event_crud.get_event_by_id(event_id)
+    if not event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Event not found",
+        )
+
+    user_id = str(current_user["_id"])
+    username = current_user["username"]
+    role = current_user.get("role", "user")
+    organizers = event.get("organizers", [])
+    visibility = event.get("visibility", "public")
+
+    if visibility == "private":
+        if role != "admin" and username not in organizers:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot join private event without invitation from organizer",
+            )
+
+    existing_participants = [p.get("user_id") for p in event.get("participants", [])]
+    if participant.user_id in existing_participants:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is already a participant",
+        )
+
+    updated_event = await event_crud.add_participant(event_id, participant)
+    if not updated_event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Event not found",
+        )
+
+    return EventResponse(
+        id=str(updated_event["_id"]),
+        name=updated_event.get("name", ""),
+        organizers=updated_event.get("organizers", []),
+        locations=updated_event.get("locations", []),
+        description=updated_event.get("description", ""),
+        start_date=updated_event["start_date"],
+        end_date=updated_event.get("end_date"),
+        start_time=updated_event["start_time"],
+        end_time=updated_event.get("end_time"),
+        images=updated_event.get("images", []),
+        notes=updated_event.get("notes", []),
+        visibility=updated_event.get("visibility", "public"),
+        participants=[
+            Participant(**p)
+            for p in updated_event.get("participants", [])
         ],
         payments=[
             PaymentInDB(**payment)
@@ -201,6 +298,7 @@ async def remove_participant(
         end_time=updated_event.get("end_time"),
         images=updated_event.get("images", []),
         notes=updated_event.get("notes", []),
+        visibility=updated_event.get("visibility", "public"),
         participants=[
             Participant(**participant)
             for participant in updated_event.get("participants", [])
@@ -246,6 +344,7 @@ async def update_participant_payment(
         end_time=updated_event.get("end_time"),
         images=updated_event.get("images", []),
         notes=updated_event.get("notes", []),
+        visibility=updated_event.get("visibility", "public"),
         participants=[
             Participant(**participant)
             for participant in updated_event.get("participants", [])
