@@ -957,7 +957,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, onUnmounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { eventsAPI, paymentsAPI, expendituresAPI, authAPI } from '@/utils/api';
+import { eventsAPI, paymentsAPI, expendituresAPI, authAPI, notificationsAPI } from '@/utils/api';
 import { useAuthStore } from '@/stores/auth';
 import type { Event, Participant, Payment, UserInfo, Expenditure, ExpenditureType } from '@/types';
 
@@ -1100,6 +1100,19 @@ const loadEvent = async () => {
     console.error(err);
   } finally {
     loading.value = false;
+  }
+};
+
+const sendPaymentNotification = async (userId: string, message: string) => {
+  if (!authStore.user || userId === authStore.user.id) return;
+  try {
+    await notificationsAPI.createNotification({
+      sender_id: authStore.user.id,
+      receiver_id: userId,
+      content: message
+    });
+  } catch (err) {
+    console.error('Failed to send notification:', err);
   }
 };
 
@@ -1309,6 +1322,7 @@ const updatePayment = async () => {
     
     const oldPaidAmount = selectedParticipant.value.paid_amount;
     const newPaidAmount = paymentForm.paid_amount;
+    const participantUser = availableUsers.value.find(u => u.id === selectedParticipant.value.user_id);
     
     await eventsAPI.updateParticipantPayment(
       event.value.id,
@@ -1318,7 +1332,6 @@ const updatePayment = async () => {
     
     if (newPaidAmount > oldPaidAmount) {
       const paymentAmount = newPaidAmount - oldPaidAmount;
-      const participantUser = availableUsers.value.find(u => u.id === selectedParticipant.value.user_id);
       const receiverUser = availableUsers.value.find(u => u.id === authStore.user?.id) || availableUsers.value[0];
       
       const paymentData = {
@@ -1334,6 +1347,10 @@ const updatePayment = async () => {
         title: `Payment from ${participantUser?.username || 'Unknown'}`
       };
       await paymentsAPI.createPayment(event.value.id, paymentData);
+      await sendPaymentNotification(
+        selectedParticipant.value.user_id,
+        `Your payment for "${event.value.name}" has been updated to $${newPaidAmount.toFixed(2)}`
+      );
     }
     
     const updatedEvent = await eventsAPI.getEvent(event.value.id);
@@ -1394,9 +1411,19 @@ const deleteParticipantPayment = async (paymentId: string, participant: Particip
   if (!event.value) return;
   if (!confirm('Are you sure you want to delete this payment?')) return;
   
+  const paymentToDelete = payments.value.find(p => p.id === paymentId);
+  
   try {
     saving.value = true;
     await paymentsAPI.deletePayment(event.value.id, paymentId);
+    
+    if (paymentToDelete) {
+      await sendPaymentNotification(
+        paymentToDelete.sender.id,
+        `A payment of $${paymentToDelete.amount.toFixed(2)} for "${event.value.name}" was deleted`
+      );
+    }
+    
     payments.value = await paymentsAPI.getEventPayments(event.value.id);
   } catch (err) {
     error.value = 'Failed to delete payment';
@@ -1410,9 +1437,19 @@ const deletePaymentFromHistory = async (paymentId: string) => {
   if (!event.value) return;
   if (!confirm('Are you sure you want to delete this payment?')) return;
   
+  const paymentToDelete = payments.value.find(p => p.id === paymentId);
+  
   try {
     saving.value = true;
     await paymentsAPI.deletePayment(event.value.id, paymentId);
+    
+    if (paymentToDelete) {
+      await sendPaymentNotification(
+        paymentToDelete.sender.id,
+        `A payment of $${paymentToDelete.amount.toFixed(2)} for "${event.value.name}" was deleted`
+      );
+    }
+    
     payments.value = await paymentsAPI.getEventPayments(event.value.id);
   } catch (err) {
     error.value = 'Failed to delete payment';
@@ -1455,6 +1492,11 @@ const addPayment = async () => {
       title: paymentCreateForm.title
     });
     
+    await sendPaymentNotification(
+      paymentCreateForm.sender.id,
+      `A new payment of $${paymentCreateForm.amount.toFixed(2)} was recorded for "${event.value.name}"`
+    );
+    
     payments.value = await paymentsAPI.getEventPayments(event.value.id);
     
     closeAddPayment();
@@ -1484,10 +1526,14 @@ const editPayment = async () => {
       title: editPaymentForm.title
     });
     
+    await sendPaymentNotification(
+      selectedPayment.value.sender.id,
+      `Your payment for "${event.value.name}" was updated to $${editPaymentForm.amount.toFixed(2)}`
+    );
+    
     const updatedEvent = await eventsAPI.getEvent(event.value.id);
     event.value = updatedEvent;
     
-    // Refresh payments list
     payments.value = await paymentsAPI.getEventPayments(event.value.id);
     
     closeEditPayment();
@@ -1509,14 +1555,23 @@ const confirmDeletePayment = (payment: Payment) => {
 const deletePayment = async (paymentId: string) => {
   if (!event.value) return;
   
+  const paymentToDelete = payments.value.find(p => p.id === paymentId);
+  
   try {
     saving.value = true;
     
     await paymentsAPI.deletePayment(event.value.id, paymentId);
+    
+    if (paymentToDelete) {
+      await sendPaymentNotification(
+        paymentToDelete.sender.id,
+        `A payment of $${paymentToDelete.amount.toFixed(2)} for "${event.value.name}" was deleted`
+      );
+    }
+    
     const updatedEvent = await eventsAPI.getEvent(event.value.id);
     event.value = updatedEvent;
     
-    // Refresh payments list
     payments.value = await paymentsAPI.getEventPayments(event.value.id);
   } catch (err) {
     error.value = 'Failed to delete payment';
