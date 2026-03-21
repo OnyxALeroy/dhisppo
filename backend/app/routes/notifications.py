@@ -73,6 +73,7 @@ async def get_user_notifications(
             content=notification["content"],
             read=notification["read"],
             created_at=notification["created_at"],
+            sender_username=notification.get("sender_username"),
         )
         for notification in notifications
     ]

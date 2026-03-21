@@ -74,7 +74,7 @@
           <div class="notification-header">
             <div class="notification-sender">
               <strong v-if="activeFilter === 'sent'">To: {{ getReceiverName(notification.receiver_id) }}</strong>
-              <strong v-else>{{ getSenderName(notification.sender_id) }}</strong>
+              <strong v-else>{{ getSenderName(notification, notification.sender_id) }}</strong>
               <span class="notification-time">
                 {{ formatTime(notification.created_at) }}
               </span>
@@ -97,9 +97,9 @@
               </button>
             </div>
           </div>
-          <div class="notification-body">
+            <div class="notification-body">
             <p v-if="notification.content.startsWith('invite:')">
-              You have been invited to join: <strong>{{ getEventName(notification.content) }}</strong>
+              <strong>{{ getInviteSender(notification) }}</strong> invited you to join: <strong>{{ getEventName(notification.content) }}</strong>
             </p>
             <p v-else>{{ notification.content }}</p>
             <button 
@@ -221,20 +221,46 @@ const formatTime = (dateString: string) => {
   return date.toLocaleDateString();
 };
 
-const getSenderName = (senderId: string) => {
+const getSenderName = (notification: any, senderId: string) => {
+  // First check if sender is current user
+  if (authStore.user?.id === senderId) {
+    return 'You';
+  }
+  // Then check sender_username from backend
+  if (notification.sender_username && notification.sender_username !== 'Unknown') {
+    return notification.sender_username;
+  }
+  // Fallback to available users list
   const user = availableUsers.value.find(u => u.id === senderId);
-  return user ? user.username : 'Unknown User';
+  if (user) return user.username;
+  return 'Unknown User';
 };
 
 const getReceiverName = (receiverId: string) => {
   const user = availableUsers.value.find(u => u.id === receiverId);
-  return user ? user.username : 'Unknown User';
+  if (user) return user.username;
+  if (authStore.user?.id === receiverId) return authStore.user.username;
+  return 'Unknown User';
 };
 
 const getEventName = (content: string) => {
-  // Format: invite:{event_id}:{event_name}
+  // Format: invite:{event_id}:{event_name}:{sender_username}
   const parts = content.split(':');
-  return parts.length >= 3 ? parts.slice(2).join(':') : 'Unknown Event';
+  return parts.length >= 3 ? parts[2] : 'Unknown Event';
+};
+
+const getInviteSender = (notification: any) => {
+  // First check if sender is current user
+  if (authStore.user?.id === notification.sender_id) {
+    return 'You';
+  }
+  // Then check sender_username from backend
+  if (notification.sender_username && notification.sender_username !== 'Unknown') {
+    return notification.sender_username;
+  }
+  // Fallback: parse from content format invite:{event_id}:{event_name}:{sender_username}
+  const parts = notification.content.split(':');
+  return parts.length >= 4 ? parts[3] : 'Someone';
 };
 
 const isInviteNotification = (notification: any) => {
@@ -384,6 +410,16 @@ onMounted(async () => {
       } catch (error) {
         console.log('Users list not available (normal for organizers)');
         // Don't fail the whole initialization for organizers
+      }
+      
+      // Always include current user in the list for name resolution
+      if (authStore.user && !availableUsers.value.find(u => u.id === authStore.user?.id)) {
+        availableUsers.value.unshift({
+          id: authStore.user.id,
+          username: authStore.user.username,
+          email: authStore.user.email,
+          role: authStore.user.role
+        });
       }
     }
   } catch (error) {

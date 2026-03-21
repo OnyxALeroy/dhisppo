@@ -14,6 +14,20 @@ class NotificationCRUD:
     def __init__(self):
         self.collection_name = "notifications"
 
+    async def _get_user_info(self, user_id: str) -> dict:
+        database = await get_database()
+        try:
+            user = await database["users"].find_one({"_id": ObjectId(user_id)})
+            if user:
+                return {
+                    "id": str(user["_id"]),
+                    "username": user.get("username", "Unknown"),
+                    "email": user.get("email", "")
+                }
+        except Exception:
+            pass
+        return {"id": user_id, "username": "Unknown", "email": ""}
+
     async def create_notification(self, notification_data: NotificationCreate) -> dict:
         database = await get_database()
         assert database is not None
@@ -50,6 +64,11 @@ class NotificationCRUD:
             .limit(limit)
             .to_list(length=limit)
         )
+        
+        for notification in notifications:
+            sender_info = await self._get_user_info(notification.get("sender_id", ""))
+            notification["sender_username"] = sender_info["username"]
+            
         return notifications
 
     async def mark_notification_as_read(self, notification_id: str) -> Optional[dict]:

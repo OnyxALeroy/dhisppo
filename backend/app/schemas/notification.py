@@ -34,6 +34,7 @@ class NotificationResponse(BaseModel):
     content: str
     read: bool
     created_at: datetime
+    sender_username: Optional[str] = None
 
     class Config:
         from_attributes = True

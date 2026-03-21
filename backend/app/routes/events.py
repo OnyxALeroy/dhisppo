@@ -258,7 +258,7 @@ async def invite_user_to_event(
     notification = NotificationCreate(
         sender_id=str(current_user["_id"]),
         receiver_id=invite.user_id,
-        content=f"invite:{event_id}:{event.get('name', 'unknown')}",
+        content=f"invite:{event_id}:{event.get('name', 'unknown')}:{current_user.get('username', 'Unknown')}",
     )
     await notification_crud.create_notification(notification)
 
