@@ -66,6 +66,11 @@
                         >Create an account</router-link
                     >
                 </p>
+                <p class="forgot-link">
+                    <router-link to="/forgot-password" class="link"
+                        >Forgot password?</router-link
+                    >
+                </p>
             </div>
         </div>
     </div>
@@ -319,6 +324,10 @@ const handleLogin = async () => {
     margin-top: 2rem;
     color: var(--gray-600);
     font-size: 0.875rem;
+}
+
+.forgot-link {
+    margin-top: 1rem;
 }
 
 .link {

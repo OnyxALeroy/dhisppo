@@ -68,6 +68,12 @@ export const authAPI = {
 
   deleteUser: (userId: string): Promise<void> =>
     api.delete(`/auth/users/${userId}`).then((res) => res.data),
+
+  forgotPassword: (email: string): Promise<{ message: string }> =>
+    api.post("/auth/forgot-password", { email }).then((res) => res.data),
+
+  resetPassword: (token: string, newPassword: string): Promise<{ message: string }> =>
+    api.post("/auth/reset-password", { token, new_password: newPassword }).then((res) => res.data),
 };
 
 export const eventsAPI = {

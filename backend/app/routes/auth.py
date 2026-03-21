@@ -4,10 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.config import settings
+from app.core.email import send_password_reset_email
 from app.core.security import create_access_token, verify_password, verify_token
 from app.crud.user import user_crud
 from app.schemas.user import (
     LoginRequest,
+    PasswordResetConfirm,
+    PasswordResetRequest,
     Token,
     UserCreate,
     UserResponse,
@@ -221,3 +224,28 @@ async def delete_user(user_id: str, current_user: dict = Depends(get_admin_user)
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
     return {"message": "User deleted successfully"}
+
+
+@router.post("/forgot-password")
+async def forgot_password(request: PasswordResetRequest):
+    token = await user_crud.create_password_reset_token(request.email)
+    if token:
+        reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
+        send_password_reset_email(request.email, reset_url)
+        return {
+            "message": "If the email exists, a reset link has been sent",
+        }
+    return {
+        "message": "If the email exists, a reset link has been sent",
+    }
+
+
+@router.post("/reset-password")
+async def reset_password(data: PasswordResetConfirm):
+    success = await user_crud.reset_password(data.token, data.new_password)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token",
+        )
+    return {"message": "Password reset successfully"}

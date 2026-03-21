@@ -11,9 +11,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 if [[ -f "$PROJECT_DIR/.env" ]]; then
-    set -a
-    source "$PROJECT_DIR/.env"
-    set +a
+    set -o noglob
+    while IFS='=' read -r key value || [[ -n "$key" ]]; do
+        key="${key#"${key%%[![:space:]]*}"}"
+        key="${key%"${key##*[![:space:]]}"}"
+        value="${value//$'\r'/}"
+        if [[ -n "$key" ]] && [[ ! "$key" =~ ^[[:space:]]*# ]]; then
+            export "$key=$value"
+        fi
+    done < "$PROJECT_DIR/.env"
+    set +o noglob
 fi
 
 # Set defaults for MongoDB if not defined in .env

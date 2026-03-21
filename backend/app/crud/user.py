@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, List, Optional
 
 from bson import ObjectId
@@ -87,6 +87,40 @@ class UserCRUD:
         assert database is not None
         result = await database[self.collection_name].delete_one({"_id": ObjectId(user_id)})
         return result.deleted_count > 0
+
+    async def create_password_reset_token(self, email: str) -> Optional[str]:
+        import secrets
+        database = await get_database()
+        assert database is not None
+        user = await self.get_user_by_email(email)
+        if not user:
+            return None
+        token = secrets.token_urlsafe(32)
+        reset_data = {
+            "reset_token": token,
+            "reset_token_expires": datetime.now() + timedelta(hours=1),
+        }
+        await database[self.collection_name].update_one(
+            {"_id": user["_id"]}, {"$set": reset_data}
+        )
+        return token
+
+    async def reset_password(self, token: str, new_password: str) -> bool:
+        from datetime import datetime as dt
+        database = await get_database()
+        assert database is not None
+        user = await database[self.collection_name].find_one({
+            "reset_token": token,
+            "reset_token_expires": {"$gt": dt.now()},
+        })
+        if not user:
+            return False
+        hashed = get_password_hash(new_password[:72])
+        await database[self.collection_name].update_one(
+            {"_id": user["_id"]},
+            {"$set": {"hashed_password": hashed}, "$unset": {"reset_token": "", "reset_token_expires": ""}},
+        )
+        return True
 
     async def get_users(self, skip: int = 0, limit: int = 100) -> List[dict]:
         database = await get_database()
