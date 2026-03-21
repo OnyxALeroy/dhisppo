@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: Optional[str] = None
     SMTP_FROM_EMAIL: Optional[str] = None
     SMTP_FROM_NAME: str = "Dhisppo"
+    RATE_LIMIT_PER_MINUTE: int = 60
+    AUTH_RATE_LIMIT_PER_MINUTE: int = 10
 
     class Config:
         env_file = ".env"

@@ -2,9 +2,13 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from app.core.config import settings
 from app.core.database import close_mongo_connection, connect_to_mongo
+from app.core.rate_limit import limiter
+from app.crud.event import event_crud
 from app.crud.user import user_crud
 from app.routes import auth_router
 from app.routes.events import router as events_router
@@ -17,6 +21,7 @@ from app.routes.notifications import router as notifications_router
 async def lifespan(app: FastAPI):
     await connect_to_mongo()
     await user_crud.create_admin_user()
+    await event_crud.ensure_text_index()
     yield
     await close_mongo_connection()
 
@@ -27,6 +32,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,

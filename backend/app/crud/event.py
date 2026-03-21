@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from bson import ObjectId
+from pymongo import TEXT
 from fastapi.encoders import jsonable_encoder
 
 from app.core.database import get_database
@@ -204,6 +205,54 @@ class EventCRUD:
             if "visibility" not in event:
                 event["visibility"] = "public"
         return events
+
+    async def search_events(
+        self, query_text: str, user_id: Optional[str] = None, username: Optional[str] = None, role: str = "user", skip: int = 0, limit: int = 100
+    ) -> List[dict]:
+        database = await get_database()
+        
+        base_query = {"$text": {"$search": query_text}}
+        
+        if role == "admin":
+            query = base_query
+        elif username and user_id:
+            query = {
+                **base_query,
+                "$or": [
+                    {"visibility": "public"},
+                    {"organizers": username},
+                    {"participants.user_id": user_id}
+                ]
+            }
+        else:
+            query = {**base_query, "visibility": "public"}
+        
+        events = (
+            await database[self.collection_name]
+            .find(query, {"score": {"$meta": "textScore"}})
+            .sort([("score", {"$meta": "textScore"})])
+            .skip(skip)
+            .limit(limit)
+            .to_list(length=limit)
+        )
+        for event in events:
+            if "payments" not in event:
+                event["payments"] = []
+            if "participants" not in event:
+                event["participants"] = []
+            if "expenditures" not in event:
+                event["expenditures"] = []
+            if "visibility" not in event:
+                event["visibility"] = "public"
+        return events
+
+    async def ensure_text_index(self):
+        database = await get_database()
+        await database[self.collection_name].create_index(
+            [("name", TEXT), ("description", TEXT)],
+            default_language="english",
+            name="event_text_search_idx"
+        )
 
     async def update_event(
         self, event_id: str, event_update: EventUpdate

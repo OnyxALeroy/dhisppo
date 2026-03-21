@@ -53,13 +53,16 @@ async def get_events(
     limit: int = 100,
     organizer: Optional[str] = None,
     location: Optional[str] = None,
+    q: Optional[str] = None,
     current_user: Optional[dict] = Depends(get_current_user_auth),
 ):
     user_id = str(current_user["_id"]) if current_user else None
     username = current_user["username"] if current_user else None
     role = current_user.get("role", "user") if current_user else "user"
     
-    if organizer:
+    if q:
+        events = await event_crud.search_events(q, user_id, username, role, skip, limit)
+    elif organizer:
         events = await event_crud.get_events_by_organizer(organizer, user_id, username, role, skip, limit)
     elif location:
         events = await event_crud.get_events_by_location(location, user_id, username, role, skip, limit)

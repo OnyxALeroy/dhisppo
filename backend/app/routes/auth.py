@@ -1,10 +1,11 @@
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.config import settings
 from app.core.email import send_password_reset_email
+from app.core.rate_limit import limiter
 from app.core.security import create_access_token, verify_password, verify_token
 from app.crud.user import user_crud
 from app.schemas.user import (
@@ -77,7 +78,8 @@ async def get_organizer_or_admin_user(
 
 
 @router.post("/register", response_model=UserResponse)
-async def register(user: UserCreate):
+@limiter.limit(f"{settings.AUTH_RATE_LIMIT_PER_MINUTE}/minute")
+async def register(request: Request, user: UserCreate):
     existing_user = await user_crud.get_user_by_username(user.username)
     if existing_user:
         raise HTTPException(status_code=400, detail="Username already registered")
@@ -97,7 +99,8 @@ async def register(user: UserCreate):
 
 
 @router.post("/login", response_model=Token)
-async def login(login_data: LoginRequest):
+@limiter.limit(f"{settings.AUTH_RATE_LIMIT_PER_MINUTE}/minute")
+async def login(request: Request, login_data: LoginRequest):
     user = await user_crud.authenticate_user(login_data.username, login_data.password)
     if not user:
         raise HTTPException(
@@ -227,11 +230,12 @@ async def delete_user(user_id: str, current_user: dict = Depends(get_admin_user)
 
 
 @router.post("/forgot-password")
-async def forgot_password(request: PasswordResetRequest):
-    token = await user_crud.create_password_reset_token(request.email)
+@limiter.limit(f"{settings.AUTH_RATE_LIMIT_PER_MINUTE}/minute")
+async def forgot_password(request: Request, password_request: PasswordResetRequest):
+    token = await user_crud.create_password_reset_token(password_request.email)
     if token:
         reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
-        send_password_reset_email(request.email, reset_url)
+        send_password_reset_email(password_request.email, reset_url)
         return {
             "message": "If the email exists, a reset link has been sent",
         }
@@ -241,7 +245,8 @@ async def forgot_password(request: PasswordResetRequest):
 
 
 @router.post("/reset-password")
-async def reset_password(data: PasswordResetConfirm):
+@limiter.limit(f"{settings.AUTH_RATE_LIMIT_PER_MINUTE}/minute")
+async def reset_password(request: Request, data: PasswordResetConfirm):
     success = await user_crud.reset_password(data.token, data.new_password)
     if not success:
         raise HTTPException(
