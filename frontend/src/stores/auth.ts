@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import type { User, UserRole } from "@/types";
 import { authAPI } from "@/utils/api";
+import { useNotificationStore } from "./notifications";
 
 export const useAuthStore = defineStore("auth", () => {
   const user = ref<User | null>(null);
@@ -20,6 +21,10 @@ export const useAuthStore = defineStore("auth", () => {
       localStorage.setItem("access_token", response.access_token);
 
       await fetchCurrentUser();
+
+      const notificationStore = useNotificationStore();
+      notificationStore.connectWebSocket(response.access_token);
+
       return true;
     } catch (error) {
       logout();
@@ -51,6 +56,8 @@ export const useAuthStore = defineStore("auth", () => {
   };
 
   const logout = () => {
+    const notificationStore = useNotificationStore();
+    notificationStore.disconnectWebSocket();
     user.value = null;
     token.value = null;
     localStorage.removeItem("access_token");
@@ -60,6 +67,8 @@ export const useAuthStore = defineStore("auth", () => {
     if (token.value) {
       try {
         await fetchCurrentUser();
+        const notificationStore = useNotificationStore();
+        notificationStore.connectWebSocket(token.value);
       } catch (error) {
         logout();
       }

@@ -97,6 +97,7 @@ export interface UserInfo {
   id: string;
   username: string;
   email?: string;
+  address?: string;
 }
 
 export interface Payment {

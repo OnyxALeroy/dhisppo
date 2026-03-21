@@ -288,9 +288,12 @@
             class="participant-card"
           >
             <div class="participant-header">
-              <div>
-                <h4>{{ getUsername(participant.user_id) }}</h4>
+              <div class="participant-info">
+                <h4>{{ getUserDisplay(participant.user_id).split(' (')[0] }}</h4>
                 <p class="participant-email">{{ getUserEmail(participant.user_id) }}</p>
+                <p class="participant-address" v-if="getUserAddress(participant.user_id)">
+                  📍 {{ getUserAddress(participant.user_id) }}
+                </p>
               </div>
               <button 
                 class="btn-danger btn-small"
@@ -300,46 +303,80 @@
               </button>
             </div>
             
-            <div class="participant-body">
-              <div v-if="participant.tags.length > 0" class="participant-tags">
-                <span 
-                  v-for="tag in participant.tags" 
-                  :key="tag"
-                  class="tag"
-                >
-                  {{ tag }}
+            <div class="participant-stats">
+              <div class="stat-item">
+                <span class="stat-label">Due</span>
+                <span class="stat-value due">${{ perPersonDue.toFixed(2) }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Paid</span>
+                <span class="stat-value paid">${{ participant.paid_amount.toFixed(2) }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Balance</span>
+                <span class="stat-value" :class="perPersonDue - participant.paid_amount <= 0 ? 'paid' : 'due'">
+                  ${{ (perPersonDue - participant.paid_amount).toFixed(2) }}
                 </span>
               </div>
-              
-              <div class="payment-info">
-                <div class="payment-row">
-                  <span>Due:</span>
-                  <span class="amount due">${{ participant.due_payment }}</span>
-                </div>
-                <div class="payment-row">
-                  <span>Paid:</span>
-                  <span class="amount paid">${{ participant.paid_amount }}</span>
-                </div>
-                <div class="payment-status" :class="getPaymentStatusClass(participant)">
-                  {{ getPaymentStatus(participant) }}
-                </div>
-              </div>
-              
+            </div>
+            
+            <div class="participant-history">
               <button 
-                class="btn-secondary btn-small btn-full"
-                @click="openPaymentModal(participant)"
+                class="history-toggle"
+                @click="toggleParticipantPayments(participant.user_id)"
               >
-                Update Payment
+                {{ expandedParticipantId === participant.user_id ? '▼' : '▶' }} 
+                Payment History ({{ getParticipantPayments(participant.user_id).length }})
               </button>
+              
+              <div v-if="expandedParticipantId === participant.user_id" class="history-list">
+                <table class="history-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Amount</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="payment in getParticipantPayments(participant.user_id)" :key="payment.id">
+                      <td>{{ formatDate(payment.created_at) }}</td>
+                      <td class="amount">${{ payment.amount.toFixed(2) }}</td>
+                      <td class="actions">
+                        <button class="btn-icon" @click="openEditParticipantPayment(payment, participant)" title="Edit">✏️</button>
+                        <button class="btn-icon" @click="deleteParticipantPayment(payment.id, participant)" title="Delete">🗑️</button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <button class="btn-primary btn-small btn-full" @click="openPaymentModal(participant)">
+                  + Add Payment
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Payments Section (always visible) -->
-      <div class="payments-section">
-        <div class="payments-header">
-          <h3>💳 Payments ({{ (event.payments || []).length }})</h3>
+      <!-- Payment History Section -->
+      <div class="payment-history-section">
+        <div class="payment-history-header">
+          <h3>💳 Payment History</h3>
+          <div class="payment-history-filters">
+            <select v-model="selectedHistoryParticipant" class="form-input">
+              <option value="">All Participants</option>
+              <option 
+                v-for="participant in event.participants" 
+                :key="participant.user_id" 
+                :value="participant.user_id"
+              >
+                {{ getUsername(participant.user_id) }}
+              </option>
+            </select>
+            <div class="payment-total">
+              Total: <strong>${{ filteredPaymentsTotal.toFixed(2) }}</strong>
+            </div>
+          </div>
           <button 
             class="btn-primary"
             @click="showAddPayment = true"
@@ -348,56 +385,36 @@
           </button>
         </div>
 
-        <div v-if="!event.payments || event.payments.length === 0" class="empty-payments">
-          <p>No payments yet</p>
+        <div v-if="filteredPayments.length === 0" class="empty-payments">
+          <p>No payment history yet</p>
         </div>
 
-        <div v-else class="payments-grid">
-          <div 
-            v-for="payment in event.payments" 
-            :key="payment.id"
-            class="payment-card"
-          >
-            <div class="payment-header">
-              <h4>{{ payment.title }}</h4>
-              <button 
-                class="btn-danger btn-small"
-                @click="confirmDeletePayment(payment)"
-              >
-                Delete
-              </button>
-            </div>
-            
-            <div class="payment-body">
-              <div class="payment-amount">
-                <span class="amount-label">Amount:</span>
-                <span class="amount-value">${{ payment.amount.toFixed(2) }}</span>
-              </div>
-              
-              <div class="payment-participants">
-                <div class="payment-participant">
-                  <span class="participant-label">From:</span>
-                  <span class="participant-name">{{ payment.sender.username }}</span>
-                </div>
-                <div class="payment-participant">
-                  <span class="participant-label">To:</span>
-                  <span class="participant-name">{{ payment.receiver.username }}</span>
-                </div>
-              </div>
-              
-              <div class="payment-date">
-                <span class="date-label">Date:</span>
-                <span class="date-value">{{ formatDate(payment.created_at) }}</span>
-              </div>
-              
-              <button 
-                class="btn-secondary btn-small btn-full"
-                @click="openEditPaymentModal(payment)"
-              >
-                Edit Payment
-              </button>
-            </div>
-          </div>
+        <div v-else class="payment-history-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Title</th>
+                <th>From</th>
+                <th>To</th>
+                <th>Amount</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="payment in filteredPayments" :key="payment.id">
+                <td>{{ formatDate(payment.created_at) }}</td>
+                <td>{{ payment.title }}</td>
+                <td>{{ payment.sender.username }}</td>
+                <td>{{ payment.receiver.username }}</td>
+                <td class="amount">${{ payment.amount.toFixed(2) }}</td>
+                <td>
+                  <button class="btn-icon" @click="openEditPaymentModal(payment)" title="Edit">✏️</button>
+                  <button class="btn-icon" @click="deletePaymentFromHistory(payment.id)" title="Delete">🗑️</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -405,6 +422,10 @@
       <div class="expenditures-section">
         <div class="expenditures-header">
           <h3>🛒 Expenditures ({{ (event.expenditures || []).length }})</h3>
+          <div class="expenditure-summary">
+            <span>Total: <strong>${{ totalExpenditures.toFixed(2) }}</strong></span>
+            <span class="split-info">(Split {{ allParticipantsCount }} ways: <strong>${{ perPersonDue.toFixed(2) }}</strong>/person)</span>
+          </div>
           <button 
             class="btn-primary"
             @click="showAddExpenditure = true"
@@ -478,14 +499,33 @@
         <h3>Add Participant</h3>
         <form @submit.prevent="addParticipant">
           <div class="form-group">
-            <label for="participantUserId">User ID</label>
-            <input 
-              id="participantUserId"
-              v-model="participantForm.user_id" 
-              type="text" 
-              required
-              class="form-input"
-            />
+            <label for="participantUserSearch">Search User</label>
+            <div class="select-with-search">
+              <input 
+                id="participantUserSearch"
+                v-model="userSearch" 
+                type="text" 
+                placeholder="Search by username or email..."
+                class="form-input search-input"
+                @focus="showUserDropdown = true"
+              />
+              <div v-if="showUserDropdown && (filteredUsersForAdd.length > 0 || userSearch)" class="dropdown">
+                <div 
+                  v-for="user in filteredUsersForAdd" 
+                  :key="user.id"
+                  class="dropdown-item"
+                  @click="selectUserForAdd(user)"
+                >
+                  {{ user.username }} ({{ user.email }})
+                </div>
+                <div v-if="filteredUsersForAdd.length === 0 && userSearch" class="dropdown-item no-results">
+                  No users found
+                </div>
+              </div>
+            </div>
+            <p v-if="selectedUserForAdd" class="selected-user-display">
+              Selected: <strong>{{ selectedUserForAdd.username }}</strong> ({{ selectedUserForAdd.email }})
+            </p>
           </div>
 
           <div class="form-group">
@@ -501,22 +541,11 @@
             />
           </div>
 
-          <div class="form-group">
-            <label for="participantTags">Tags (comma-separated)</label>
-            <input 
-              id="participantTags"
-              v-model="participantTagsInput" 
-              type="text" 
-              placeholder="tag1, tag2, tag3"
-              class="form-input"
-            />
-          </div>
-
           <div class="modal-actions">
             <button type="button" class="btn-secondary" @click="closeAddParticipant">
               Cancel
             </button>
-            <button type="submit" class="btn-primary" :disabled="saving">
+            <button type="submit" class="btn-primary" :disabled="saving || !selectedUserForAdd">
               {{ saving ? 'Adding...' : 'Add Participant' }}
             </button>
           </div>
@@ -582,7 +611,7 @@
     <div v-if="showPaymentModal" class="modal-overlay" @click="closePaymentModal">
       <div class="modal" @click.stop>
         <h3>Update Payment</h3>
-        <p>Participant: {{ selectedParticipant?.user_id }}</p>
+        <p>Participant: {{ getUserDisplay(selectedParticipant?.user_id || '') }}</p>
         
         <form @submit.prevent="updatePayment">
           <div class="form-group">
@@ -940,6 +969,11 @@ const event = ref<Event | null>(null);
 const loading = ref(true);
 const saving = ref(false);
 const error = ref<string | null>(null);
+const payments = ref<Payment[]>([]);
+
+const expandedParticipantId = ref<string | null>(null);
+const selectedHistoryParticipant = ref<string>('');
+const selectedPayment = ref<Payment | null>(null);
 
 const isEditMode = ref(false);
 const showAddParticipant = ref(false);
@@ -955,6 +989,10 @@ const availableUsers = ref<UserInfo[]>([]);
 const inviteSearch = ref('');
 const selectedInviteUser = ref<UserInfo | null>(null);
 const showInviteDropdown = ref(false);
+
+const userSearch = ref('');
+const selectedUserForAdd = ref<UserInfo | null>(null);
+const showUserDropdown = ref(false);
 
 const eventForm = reactive({
   name: '',
@@ -976,7 +1014,6 @@ const participantForm = reactive({
   tags: [] as string[]
 });
 
-const participantTagsInput = ref('');
 const selectedParticipant = ref<Participant | null>(null);
 const paymentForm = reactive({
   paid_amount: 0
@@ -994,7 +1031,6 @@ const receiverSearch = ref('');
 const showSenderDropdown = ref(false);
 const showReceiverDropdown = ref(false);
 
-const selectedPayment = ref<Payment | null>(null);
 const editPaymentForm = reactive({
   amount: 0,
   title: ''
@@ -1024,10 +1060,6 @@ const loadEvent = async () => {
     loading.value = true;
     const eventId = route.params.id as string;
     const eventData = await eventsAPI.getEvent(eventId);
-    // Ensure arrays exist
-    if (!eventData.payments) {
-      eventData.payments = [];
-    }
     if (!eventData.participants) {
       eventData.participants = [];
     }
@@ -1051,6 +1083,16 @@ const loadEvent = async () => {
     }
     
     event.value = eventData;
+    
+    // Fetch payments from separate collection
+    try {
+      const paymentsData = await paymentsAPI.getEventPayments(eventId);
+      payments.value = paymentsData;
+    } catch (paymentErr) {
+      console.warn('Failed to load payments:', paymentErr);
+      payments.value = [];
+    }
+    
     await loadAvailableUsers();
     resetForm();
   } catch (err) {
@@ -1067,7 +1109,8 @@ const loadAvailableUsers = async () => {
     availableUsers.value = users.map(user => ({
       id: user.id,
       username: user.username,
-      email: user.email
+      email: user.email,
+      address: user.address
     }));
   } catch (err) {
     console.error('Failed to load users:', err);
@@ -1082,6 +1125,11 @@ const getUsername = (userId: string): string => {
 const getUserEmail = (userId: string): string => {
   const user = availableUsers.value.find(u => u.id === userId);
   return user ? user.email : '';
+};
+
+const getUserAddress = (userId: string): string => {
+  const user = availableUsers.value.find(u => u.id === userId);
+  return user?.address || '';
 };
 
 const resetForm = () => {
@@ -1200,16 +1248,21 @@ const getPaymentStatusClass = (participant: Participant) => {
   return 'status-unpaid';
 };
 
+const getUserDisplay = (userId: string) => {
+  const user = availableUsers.value.find(u => u.id === userId);
+  if (user) {
+    return `${user.username} (${user.email})`;
+  }
+  return userId;
+};
+
 const addParticipant = async () => {
-  if (!event.value) return;
+  if (!event.value || !selectedUserForAdd.value) return;
   
   try {
     saving.value = true;
     
-    participantForm.tags = participantTagsInput.value
-      .split(',')
-      .map(tag => tag.trim())
-      .filter(tag => tag.length > 0);
+    participantForm.user_id = selectedUserForAdd.value.id;
 
     await eventsAPI.addParticipant(event.value.id, participantForm);
     const updatedEvent = await eventsAPI.getEvent(event.value.id);
@@ -1249,22 +1302,48 @@ const openPaymentModal = (participant: Participant) => {
 };
 
 const updatePayment = async () => {
-  if (!event.value || !selectedParticipant.value) return;
+  if (!event.value || !selectedParticipant.value || !authStore.user) return;
   
   try {
     saving.value = true;
     
+    const oldPaidAmount = selectedParticipant.value.paid_amount;
+    const newPaidAmount = paymentForm.paid_amount;
+    
     await eventsAPI.updateParticipantPayment(
       event.value.id,
       selectedParticipant.value.user_id,
-      paymentForm.paid_amount
+      newPaidAmount
     );
+    
+    if (newPaidAmount > oldPaidAmount) {
+      const paymentAmount = newPaidAmount - oldPaidAmount;
+      const participantUser = availableUsers.value.find(u => u.id === selectedParticipant.value.user_id);
+      const receiverUser = availableUsers.value.find(u => u.id === authStore.user?.id) || availableUsers.value[0];
+      
+      const paymentData = {
+        sender: {
+          id: selectedParticipant.value.user_id,
+          username: participantUser?.username || 'Unknown'
+        },
+        receiver: {
+          id: receiverUser?.id || authStore.user?.id,
+          username: receiverUser?.username || authStore.user?.username
+        },
+        amount: paymentAmount,
+        title: `Payment from ${participantUser?.username || 'Unknown'}`
+      };
+      await paymentsAPI.createPayment(event.value.id, paymentData);
+    }
+    
     const updatedEvent = await eventsAPI.getEvent(event.value.id);
     event.value = updatedEvent;
     
+    payments.value = await paymentsAPI.getEventPayments(event.value.id);
+    
     closePaymentModal();
-  } catch (err) {
-    error.value = 'Failed to update payment';
+  } catch (err: any) {
+    error.value = err.response?.data?.detail || 'Failed to update payment';
     console.error(err);
   } finally {
     saving.value = false;
@@ -1278,13 +1357,69 @@ const closeAddParticipant = () => {
     due_payment: 0,
     tags: []
   });
-  participantTagsInput.value = '';
+  userSearch.value = '';
+  selectedUserForAdd.value = null;
+  showUserDropdown.value = false;
 };
 
 const closePaymentModal = () => {
   showPaymentModal.value = false;
   selectedParticipant.value = null;
   paymentForm.paid_amount = 0;
+};
+
+const toggleParticipantPayments = (userId: string) => {
+  if (expandedParticipantId.value === userId) {
+    expandedParticipantId.value = null;
+  } else {
+    expandedParticipantId.value = userId;
+  }
+};
+
+const getParticipantPayments = (userId: string) => {
+  return payments.value.filter(p => 
+    p.sender.id === userId || p.receiver.id === userId
+  );
+};
+
+const openEditParticipantPayment = (payment: Payment, participant: Participant) => {
+  selectedPayment.value = payment;
+  editPaymentForm.amount = payment.amount;
+  editPaymentForm.title = payment.title;
+  selectedParticipant.value = participant;
+  showEditPayment.value = true;
+};
+
+const deleteParticipantPayment = async (paymentId: string, participant: Participant) => {
+  if (!event.value) return;
+  if (!confirm('Are you sure you want to delete this payment?')) return;
+  
+  try {
+    saving.value = true;
+    await paymentsAPI.deletePayment(event.value.id, paymentId);
+    payments.value = await paymentsAPI.getEventPayments(event.value.id);
+  } catch (err) {
+    error.value = 'Failed to delete payment';
+    console.error(err);
+  } finally {
+    saving.value = false;
+  }
+};
+
+const deletePaymentFromHistory = async (paymentId: string) => {
+  if (!event.value) return;
+  if (!confirm('Are you sure you want to delete this payment?')) return;
+  
+  try {
+    saving.value = true;
+    await paymentsAPI.deletePayment(event.value.id, paymentId);
+    payments.value = await paymentsAPI.getEventPayments(event.value.id);
+  } catch (err) {
+    error.value = 'Failed to delete payment';
+    console.error(err);
+  } finally {
+    saving.value = false;
+  }
 };
 
 const openImageModal = (image: string) => {
@@ -1296,10 +1431,22 @@ const closeImageModal = () => {
 };
 
 const addPayment = async () => {
-  if (!event.value || !paymentCreateForm.sender || !paymentCreateForm.receiver) return;
+  if (!event.value) {
+    error.value = 'Event not loaded';
+    return;
+  }
+  if (!paymentCreateForm.sender || !paymentCreateForm.receiver) {
+    error.value = 'Please select both sender and receiver';
+    return;
+  }
+  if (paymentCreateForm.amount <= 0) {
+    error.value = 'Please enter a valid amount';
+    return;
+  }
   
   try {
     saving.value = true;
+    error.value = null;
     
     await paymentsAPI.createPayment(event.value.id, {
       sender: paymentCreateForm.sender,
@@ -1308,12 +1455,11 @@ const addPayment = async () => {
       title: paymentCreateForm.title
     });
     
-    const updatedEvent = await eventsAPI.getEvent(event.value.id);
-    event.value = updatedEvent;
+    payments.value = await paymentsAPI.getEventPayments(event.value.id);
     
     closeAddPayment();
-  } catch (err) {
-    error.value = 'Failed to add payment';
+  } catch (err: any) {
+    error.value = err.response?.data?.detail || 'Failed to add payment';
     console.error(err);
   } finally {
     saving.value = false;
@@ -1341,6 +1487,9 @@ const editPayment = async () => {
     const updatedEvent = await eventsAPI.getEvent(event.value.id);
     event.value = updatedEvent;
     
+    // Refresh payments list
+    payments.value = await paymentsAPI.getEventPayments(event.value.id);
+    
     closeEditPayment();
   } catch (err) {
     error.value = 'Failed to update payment';
@@ -1366,6 +1515,9 @@ const deletePayment = async (paymentId: string) => {
     await paymentsAPI.deletePayment(event.value.id, paymentId);
     const updatedEvent = await eventsAPI.getEvent(event.value.id);
     event.value = updatedEvent;
+    
+    // Refresh payments list
+    payments.value = await paymentsAPI.getEventPayments(event.value.id);
   } catch (err) {
     error.value = 'Failed to delete payment';
     console.error(err);
@@ -1515,6 +1667,44 @@ const closeEditExpenditure = () => {
   });
 };
 
+const totalPayments = computed(() => {
+  return payments.value.reduce((sum, payment) => sum + payment.amount, 0);
+});
+
+const filteredPayments = computed(() => {
+  if (!selectedHistoryParticipant.value) {
+    return payments.value;
+  }
+  return payments.value.filter(p => 
+    p.sender.id === selectedHistoryParticipant.value || 
+    p.receiver.id === selectedHistoryParticipant.value
+  );
+});
+
+const filteredPaymentsTotal = computed(() => {
+  return filteredPayments.value.reduce((sum, payment) => sum + payment.amount, 0);
+});
+
+const totalExpenditures = computed(() => {
+  if (!event.value?.expenditures) return 0;
+  return event.value.expenditures.reduce((sum, exp) => sum + exp.amount, 0);
+});
+
+const allParticipantsCount = computed(() => {
+  if (!event.value) return 0;
+  const participantCount = event.value.participants?.length || 0;
+  const organizerCount = event.value.organizers?.length || 0;
+  const uniqueOrganizers = event.value.organizers?.filter(org => 
+    !event.value?.participants?.some(p => p.user_id === org)
+  ).length || 0;
+  return participantCount + uniqueOrganizers;
+});
+
+const perPersonDue = computed(() => {
+  if (allParticipantsCount.value === 0) return 0;
+  return totalExpenditures.value / allParticipantsCount.value;
+});
+
 const canInviteUsers = computed(() => {
   if (!event.value || !authStore.user) return false;
   if (authStore.isAdmin) return true;
@@ -1547,6 +1737,33 @@ const filteredInviteUsers = computed(() => {
     (user.email && user.email.toLowerCase().includes(searchLower))
   );
 });
+
+const filteredUsersForAdd = computed(() => {
+  const currentUserId = authStore.user?.id;
+  const participantUserIds = new Set(event.value?.participants.map(p => p.user_id) || []);
+  
+  let available = availableUsers.value.filter(user => {
+    const isCurrentUser = user.id === currentUserId;
+    const isParticipant = participantUserIds.has(user.id);
+    return !isCurrentUser && !isParticipant;
+  });
+  
+  if (!userSearch.value.trim()) {
+    return available;
+  }
+  
+  const searchLower = userSearch.value.toLowerCase().trim();
+  return available.filter(user => 
+    user.username.toLowerCase().includes(searchLower) ||
+    (user.email && user.email.toLowerCase().includes(searchLower))
+  );
+});
+
+const selectUserForAdd = (user: UserInfo) => {
+  selectedUserForAdd.value = user;
+  userSearch.value = user.username;
+  showUserDropdown.value = false;
+};
 
 const selectInviteUser = (user: UserInfo) => {
   selectedInviteUser.value = user;
@@ -1935,104 +2152,135 @@ onUnmounted(() => {
 
 .participant-card {
   background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #ecf0f1;
-}
-
-.participant-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.participant-header h4 {
-  color: #2c3e50;
-  margin: 0;
-  font-size: 1.1rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e8e8e8;
+  overflow: hidden;
 }
 
 .participant-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 1rem;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.participant-info h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
 .participant-email {
   font-size: 0.875rem;
-  color: #666;
+  opacity: 0.9;
+  margin: 0;
+}
+
+.participant-address {
+  font-size: 0.8rem;
+  opacity: 0.8;
   margin: 0.25rem 0 0 0;
 }
 
-.participant-body {
+.participant-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.stat-item {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-}
-
-.participant-tags {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.tag {
-  background: #e8f5e8;
-  color: #2e7d32;
-  padding: 0.2rem 0.5rem;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-.payment-info {
-  background: #f8f9fa;
+  align-items: center;
   padding: 1rem;
-  border-radius: 6px;
+  text-align: center;
+  border-right: 1px solid #e8e8e8;
 }
 
-.payment-row {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 0.3rem;
+.stat-item:last-child {
+  border-right: none;
 }
 
-.amount {
-  font-weight: 600;
+.stat-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #888;
+  margin-bottom: 0.25rem;
 }
 
-.amount.due {
+.stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.stat-value.due {
   color: #e74c3c;
 }
 
-.amount.paid {
+.stat-value.paid {
   color: #27ae60;
 }
 
-.payment-status {
-  text-align: center;
-  padding: 0.5rem;
-  border-radius: 6px;
+.participant-history {
+  padding: 0;
+}
+
+.history-toggle {
+  width: 100%;
+  padding: 0.75rem 1.25rem;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #e8e8e8;
+  color: #667eea;
   font-weight: 600;
-  margin-top: 0.5rem;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.status-paid {
-  background: #d4edda;
-  color: #155724;
+.history-toggle:hover {
+  background: #f8f9fa;
 }
 
-.status-partial {
-  background: #fff3cd;
-  color: #856404;
+.history-list {
+  padding: 1rem;
 }
 
-.status-unpaid {
-  background: #f8d7da;
-  color: #721c24;
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.history-table th {
+  text-align: left;
+  padding: 0.5rem;
+  color: #888;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.history-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.history-table td.amount {
+  font-weight: 600;
+  color: #27ae60;
+}
+
+.history-table td.actions {
+  text-align: right;
 }
 
 .btn-full {
@@ -2041,284 +2289,119 @@ onUnmounted(() => {
 
 .btn-small {
   padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  max-width: 500px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.modal h3 {
-  color: #2c3e50;
-  margin-bottom: 1.5rem;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-  margin-top: 2rem;
-}
-
-.modal-subtitle {
-  color: #666;
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
-}
-
-.selected-user-display {
-  background: #e3f2fd;
-  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
   border-radius: 6px;
-  margin-top: 1rem;
-  color: #1976d2;
-}
-
-.image-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1001;
-}
-
-.image-modal {
-  position: relative;
-  max-width: 90vw;
-  max-height: 90vh;
-}
-
-.close-image {
-  position: absolute;
-  top: -40px;
-  right: 0;
-  background: none;
-  border: none;
-  color: white;
-  font-size: 2rem;
   cursor: pointer;
-  padding: 0.5rem;
-}
-
-.modal-image {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  border-radius: 8px;
 }
 
 .btn-primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
   cursor: pointer;
-  font-size: 1rem;
-  transition: opacity 0.2s;
 }
 
-.btn-primary:hover:not(:disabled) {
+.btn-primary:hover {
   opacity: 0.9;
 }
 
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 .btn-secondary {
-  background: #ecf0f1;
-  color: #2c3e50;
+  background: #f0f0f0;
+  color: #333;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
   cursor: pointer;
-  font-size: 1rem;
-  transition: background 0.2s;
 }
 
 .btn-secondary:hover {
-  background: #d5dbdd;
+  background: #e0e0e0;
 }
 
 .btn-danger {
   background: #e74c3c;
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
   cursor: pointer;
-  font-size: 1rem;
-  transition: opacity 0.2s;
 }
 
 .btn-danger:hover {
-  opacity: 0.9;
+  background: #c0392b;
 }
 
-.loading,
-.error,
-.not-found {
-  text-align: center;
-  padding: 3rem;
-  color: #7f8c8d;
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  font-size: 1rem;
 }
 
-.error {
-  background: #ffeaa7;
-  color: #d63031;
-  border-radius: 8px;
+.btn-icon:hover {
+  opacity: 0.6;
 }
 
-.empty-participants {
-  text-align: center;
-  padding: 2rem;
-  color: #7f8c8d;
-}
-
-.payments-section {
-  background: #f8f9fa;
-  padding: 2rem;
-  border-radius: 12px;
-  border: 1px solid #ecf0f1;
-  margin-top: 2rem;
-}
-
-.payments-header {
+.payment-history-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
   margin-bottom: 1.5rem;
 }
 
-.payments-section h3 {
+.payment-history-header h3 {
   color: #2c3e50;
   margin: 0;
   font-size: 1.3rem;
 }
 
-.payments-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 1rem;
-}
-
-.payment-card {
-  background: white;
-  padding: 1.2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #ecf0f1;
-}
-
-.payment-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.8rem;
-}
-
-.payment-header h4 {
-  color: #2c3e50;
-  margin: 0;
+.payment-total {
+  background: #27ae60;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
   font-size: 1rem;
-  font-weight: 600;
 }
 
-.payment-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-}
-
-.payment-amount {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem;
-  background: #e8f5e8;
-  border-radius: 6px;
-}
-
-.amount-label {
-  font-weight: 500;
-  color: #2e7d32;
-}
-
-.amount-value {
-  font-weight: 700;
-  color: #2e7d32;
+.payment-total strong {
   font-size: 1.2rem;
 }
 
-.payment-participants {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+.payment-history-table {
+  overflow-x: auto;
 }
 
-.payment-participant {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.payment-history-table table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
-.participant-label {
-  font-weight: 500;
-  color: #666;
-  font-size: 0.9rem;
+.payment-history-table th,
+.payment-history-table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #ecf0f1;
 }
 
-.participant-name {
+.payment-history-table th {
+  background: #e8f4fc;
   font-weight: 600;
   color: #2c3e50;
 }
 
-.payment-date {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.9rem;
-  color: #666;
+.payment-history-table td {
+  color: #555;
 }
 
-.date-label {
-  font-weight: 500;
+.payment-history-table td.amount {
+  font-weight: 600;
+  color: #27ae60;
 }
 
-.date-value {
-  color: #7f8c8d;
-}
-
-.empty-payments {
-  text-align: center;
-  padding: 2rem;
-  color: #7f8c8d;
+.payment-history-table tbody tr:hover {
+  background: #f8f9fa;
 }
 
 .expenditures-section {
@@ -2333,7 +2416,28 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
   margin-bottom: 1.5rem;
+}
+
+.expenditure-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: #856404;
+  background: #fff3cd;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+}
+
+.expenditure-summary strong {
+  font-size: 1.1rem;
+}
+
+.split-info {
+  font-size: 0.85rem;
+  color: #666;
 }
 
 .expenditures-section h3 {
@@ -2570,4 +2674,113 @@ onUnmounted(() => {
     grid-template-columns: 1fr;
   }
 }
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.modal h3 {
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.modal-subtitle {
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  justify-content: flex-end;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.image-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.image-modal {
+  max-width: 90vw;
+  max-height: 90vh;
+  position: relative;
+}
+
+.modal-image {
+  max-width: 100%;
+  max-height: 90vh;
+  border-radius: 8px;
+}
+
+.close-image {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+.close-image:hover {
+  opacity: 0.8;
+}
+
 </style>

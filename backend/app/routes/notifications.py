@@ -1,9 +1,12 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, status
 
+from app.core.websocket import manager
 from app.crud.notification import notification_crud
+from app.crud.user import user_crud
 from app.routes.auth import get_current_user_auth
+from app.core.security import verify_token
 from app.schemas.notification import (
     NotificationCreate,
     NotificationResponse,
@@ -25,6 +28,21 @@ async def create_notification(
         )
     
     db_notification = await notification_crud.create_notification(notification)
+    
+    # Send real-time notification via WebSocket
+    notification_data = {
+        "type": "notification",
+        "data": {
+            "id": str(db_notification["_id"]),
+            "sender_id": db_notification["sender_id"],
+            "receiver_id": db_notification["receiver_id"],
+            "content": db_notification["content"],
+            "read": db_notification["read"],
+            "created_at": str(db_notification["created_at"]),
+        }
+    }
+    await manager.send_personal_message(notification_data, db_notification["receiver_id"])
+    
     return NotificationResponse(
         id=str(db_notification["_id"]),
         sender_id=db_notification["sender_id"],
@@ -143,3 +161,30 @@ async def delete_notification(
         )
     
     return {"message": "Notification deleted successfully"}
+
+
+@router.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket, token: str = None):
+    if not token:
+        await websocket.close(code=4001, reason="Missing token")
+        return
+
+    payload = verify_token(token)
+    if not payload:
+        await websocket.close(code=4002, reason="Invalid token")
+        return
+
+    username = payload.get("sub")
+    user = await user_crud.get_user_by_username(username)
+    if not user:
+        await websocket.close(code=4003, reason="User not found")
+        return
+
+    user_id = str(user["_id"])
+    await manager.connect(websocket, user_id)
+
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, user_id)

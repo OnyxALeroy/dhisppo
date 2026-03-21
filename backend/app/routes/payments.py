@@ -21,11 +21,6 @@ def generate_payment_id():
 async def verify_user_exists(user_id: str) -> UserInfo:
     """Verify user exists and return user info"""
     user_info = await payment_crud.get_user_info(user_id)
-    if not user_info or user_info["username"] == "Unknown":
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User with ID {user_id} not found"
-        )
     return UserInfo(**user_info)
 
 
@@ -39,12 +34,12 @@ async def check_event_permission(event_id: str, current_user: dict) -> dict:
         )
 
     user_role = current_user.get("role")
-    user_id = str(current_user["_id"])
+    username = current_user.get("username")
 
-    # Check if user is admin or event organizer
+    # Check if user is admin or event organizer (organizers are stored by username)
     if not (
         user_role == UserRole.ADMIN
-        or (user_role == UserRole.ORGANIZER and user_id in event.get("organizers", []))
+        or (user_role == UserRole.ORGANIZER and username in event.get("organizers", []))
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

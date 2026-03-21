@@ -325,16 +325,6 @@
             />
           </div>
 
-          <div class="form-group">
-            <label for="participantTags">Tags (comma-separated)</label>
-            <input 
-              id="participantTags"
-              v-model="participantTagsInput" 
-              type="text" 
-              placeholder="tag1, tag2, tag3"
-            />
-          </div>
-
           <div class="modal-actions">
             <button type="button" class="btn-secondary" @click="closeAddParticipantModal">
               Cancel
@@ -351,7 +341,7 @@
     <div v-if="showUpdatePaymentModal" class="modal-overlay" @click="closeUpdatePaymentModal">
       <div class="modal" @click.stop>
         <h3>Update Payment</h3>
-        <p>Participant: {{ selectedParticipant?.user_id }}</p>
+        <p>Participant: {{ getUserDisplay(selectedParticipant?.user_id || '') }}</p>
         
         <form @submit.prevent="savePaymentUpdate">
           <div class="form-group">
@@ -423,8 +413,6 @@ const participantForm = reactive({
   due_payment: 0,
   tags: [] as string[]
 });
-
-const participantTagsInput = ref('');
 
 const selectedParticipant = ref<Participant | null>(null);
 const paymentUpdateForm = reactive({
@@ -573,6 +561,14 @@ const getPaymentStatusClass = (participant: Participant) => {
   return 'status-unpaid';
 };
 
+const getUserDisplay = (userId: string) => {
+  const user = availableUsers.value.find(u => u.id === userId);
+  if (user) {
+    return `${user.username} (${user.email})`;
+  }
+  return userId;
+};
+
 // Event management
 const editEvent = (event: Event) => {
   router.push(`/event/${event.id}`);
@@ -649,13 +645,6 @@ const addParticipant = async () => {
   try {
     loading.value = true;
     
-    // Process tags
-    participantForm.tags = participantTagsInput.value
-      .split(',')
-      .map(tag => tag.trim())
-      .filter(tag => tag.length > 0);
-
-    // Use selected user ID
     participantForm.user_id = selectedUserForAdd.value.id;
 
     if (selectedEvent.value) {
@@ -741,7 +730,6 @@ const resetParticipantForm = () => {
     due_payment: 0,
     tags: []
   });
-  participantTagsInput.value = '';
 };
 
 // Handle click outside to close dropdown

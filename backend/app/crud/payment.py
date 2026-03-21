@@ -16,13 +16,16 @@ class PaymentCRUD:
     async def get_user_info(self, user_id: str) -> Dict[str, Any]:
         """Get user information from the users collection"""
         database = await get_database()
-        user = await database["users"].find_one({"_id": ObjectId(user_id)})
-        if user:
-            return {
-                "id": str(user["_id"]),
-                "username": user.get("username", ""),
-                "email": user.get("email", "")
-            }
+        try:
+            user = await database["users"].find_one({"_id": ObjectId(user_id)})
+            if user:
+                return {
+                    "id": str(user["_id"]),
+                    "username": user.get("username", ""),
+                    "email": user.get("email", "")
+                }
+        except Exception:
+            pass
         return {"id": user_id, "username": "Unknown", "email": ""}
 
     async def create_payment(self, event_id: str, payment_data: PaymentCreate) -> Optional[dict]:

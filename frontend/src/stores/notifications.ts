@@ -3,6 +3,9 @@ import { ref, computed } from "vue";
 import type { Notification, NotificationCreate } from "@/types";
 import { notificationsAPI } from "@/utils/api";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const WS_BASE_URL = API_BASE_URL.replace("http://", "ws://").replace("https://", "wss://");
+
 export const useNotificationStore = defineStore("notifications", () => {
   const notifications = ref<Notification[]>([]);
   const unreadCount = ref<number>(0);
@@ -10,8 +13,60 @@ export const useNotificationStore = defineStore("notifications", () => {
   const error = ref<string | null>(null);
   const pollingInterval = ref<NodeJS.Timeout | null>(null);
   const currentUserId = ref<string | null>(null);
+  const wsConnection = ref<WebSocket | null>(null);
+  const wsConnected = ref<boolean>(false);
 
-  // Set current user ID for filtering
+  const connectWebSocket = (token: string) => {
+    if (wsConnection.value?.readyState === WebSocket.OPEN) {
+      return;
+    }
+
+    const ws = new WebSocket(`${WS_BASE_URL}/notifications/ws?token=${token}`);
+
+    ws.onopen = () => {
+      wsConnected.value = true;
+      console.log("WebSocket connected");
+      stopPolling();
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message.type === "notification") {
+          const notification = message.data as Notification;
+          notifications.value.unshift(notification);
+          if (!notification.read && notification.receiver_id === currentUserId.value) {
+            unreadCount.value += 1;
+          }
+        }
+      } catch (e) {
+        console.error("Error parsing WebSocket message:", e);
+      }
+    };
+
+    ws.onclose = () => {
+      wsConnected.value = false;
+      console.log("WebSocket disconnected");
+      startPolling();
+    };
+
+    ws.onerror = (error) => {
+      console.error("WebSocket error:", error);
+      wsConnected.value = false;
+      startPolling();
+    };
+
+    wsConnection.value = ws;
+  };
+
+  const disconnectWebSocket = () => {
+    if (wsConnection.value) {
+      wsConnection.value.close();
+      wsConnection.value = null;
+      wsConnected.value = false;
+    }
+  };
+
   const setCurrentUserId = (userId: string) => {
     currentUserId.value = userId;
   };
@@ -175,11 +230,17 @@ export const useNotificationStore = defineStore("notifications", () => {
     }
   };
 
+  const initializeWithWebSocket = (token: string) => {
+    initialize();
+    connectWebSocket(token);
+  };
+
   return {
     notifications,
     unreadCount,
     loading,
     error,
+    wsConnected,
     unreadNotifications,
     readNotifications,
     receivedNotifications,
@@ -192,6 +253,9 @@ export const useNotificationStore = defineStore("notifications", () => {
     markAllAsRead,
     deleteNotification,
     initialize,
+    initializeWithWebSocket,
+    connectWebSocket,
+    disconnectWebSocket,
     startPolling,
     stopPolling,
     setCurrentUserId,
