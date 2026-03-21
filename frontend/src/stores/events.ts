@@ -150,6 +150,39 @@ export const useEventStore = defineStore("events", () => {
     }
   };
 
+  const inviteUser = async (eventId: string, userId: string) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      await eventsAPI.inviteUser(eventId, userId);
+    } catch (err) {
+      error.value = "Failed to send invitation";
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const acceptInvitation = async (eventId: string) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const updatedEvent = await eventsAPI.acceptInvitation(eventId);
+      const index = events.value.findIndex((e) => e.id === eventId);
+      if (index !== -1) {
+        events.value[index] = updatedEvent;
+      } else {
+        events.value.push(updatedEvent);
+      }
+      return updatedEvent;
+    } catch (err) {
+      error.value = "Failed to accept invitation";
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
   return {
     events,
     loading,
@@ -162,5 +195,7 @@ export const useEventStore = defineStore("events", () => {
     addParticipant,
     removeParticipant,
     updateParticipantPayment,
+    inviteUser,
+    acceptInvitation,
   };
 });

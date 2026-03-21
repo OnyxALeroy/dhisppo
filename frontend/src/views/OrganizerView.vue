@@ -204,7 +204,7 @@
         <div class="participants-header">
           <button 
             class="btn-primary"
-            @click="showAddParticipantModal = true"
+            @click="openAddParticipantModal"
           >
             Add Participant
           </button>
@@ -221,7 +221,8 @@
             class="participant-card"
           >
             <div class="participant-info">
-              <h4>{{ participant.user_id }}</h4>
+              <h4>{{ getUsername(participant.user_id) }}</h4>
+              <p class="participant-email">{{ getUserEmail(participant.user_id) }}</p>
               <div v-if="participant.tags.length > 0" class="participant-tags">
                 <span 
                   v-for="tag in participant.tags" 
@@ -283,13 +284,33 @@
         
         <form @submit.prevent="addParticipant">
           <div class="form-group">
-            <label for="participantUserId">User ID</label>
-            <input 
-              id="participantUserId"
-              v-model="participantForm.user_id" 
-              type="text" 
-              required
-            />
+            <label for="participantUserSearch">Search User</label>
+            <div class="select-with-search">
+              <input 
+                id="participantUserSearch"
+                v-model="userSearch" 
+                type="text" 
+                placeholder="Search by username or email..."
+                class="form-input search-input"
+                @focus="showUserDropdown = true"
+              />
+              <div v-if="showUserDropdown && (filteredUsersForAdd.length > 0 || userSearch)" class="dropdown">
+                <div 
+                  v-for="user in filteredUsersForAdd" 
+                  :key="user.id"
+                  class="dropdown-item"
+                  @click="selectUserForAdd(user)"
+                >
+                  {{ user.username }} ({{ user.email }})
+                </div>
+                <div v-if="filteredUsersForAdd.length === 0 && userSearch" class="dropdown-item no-results">
+                  No users found
+                </div>
+              </div>
+            </div>
+            <p v-if="selectedUserForAdd" class="selected-user-display">
+              Selected: <strong>{{ selectedUserForAdd.username }}</strong> ({{ selectedUserForAdd.email }})
+            </p>
           </div>
 
           <div class="form-group">
@@ -318,7 +339,7 @@
             <button type="button" class="btn-secondary" @click="closeAddParticipantModal">
               Cancel
             </button>
-            <button type="submit" class="btn-primary" :disabled="loading">
+            <button type="submit" class="btn-primary" :disabled="loading || !selectedUserForAdd">
               {{ loading ? 'Adding...' : 'Add Participant' }}
             </button>
           </div>
@@ -360,13 +381,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, reactive, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useEventStore } from '@/stores/events';
 import EventForm from '@/components/EventForm.vue';
-import type { Event, EventCreate, Participant } from '@/types';
-import { eventsAPI } from '@/utils/api';
+import type { Event, EventCreate, Participant, UserInfo } from '@/types';
+import { eventsAPI, authAPI } from '@/utils/api';
 
 const authStore = useAuthStore();
 const eventStore = useEventStore();
@@ -376,6 +397,12 @@ const router = useRouter();
 const selectedEvent = ref<Event | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
+
+// Users for participant management
+const availableUsers = ref<UserInfo[]>([]);
+const userSearch = ref('');
+const selectedUserForAdd = ref<UserInfo | null>(null);
+const showUserDropdown = ref(false);
 
 // Browser filters
 const filterLocation = ref("");
@@ -403,6 +430,59 @@ const selectedParticipant = ref<Participant | null>(null);
 const paymentUpdateForm = reactive({
   paid_amount: 0
 });
+
+// Load available users
+const loadUsers = async () => {
+  try {
+    const users = await authAPI.getUsers();
+    availableUsers.value = users.map(user => ({
+      id: user.id,
+      username: user.username,
+      email: user.email
+    }));
+  } catch (err) {
+    console.error('Failed to load users:', err);
+  }
+};
+
+// Get username by user ID
+const getUsername = (userId: string): string => {
+  const user = availableUsers.value.find(u => u.id === userId);
+  return user ? user.username : userId;
+};
+
+// Get email by user ID
+const getUserEmail = (userId: string): string => {
+  const user = availableUsers.value.find(u => u.id === userId);
+  return user ? user.email : '';
+};
+
+// Filtered users for add participant (exclude current user and existing participants)
+const filteredUsersForAdd = computed(() => {
+  if (!selectedEvent.value) return [];
+  
+  const currentUserId = authStore.user?.id;
+  const existingParticipantIds = new Set(selectedEvent.value.participants.map(p => p.user_id));
+  
+  let filtered = availableUsers.value.filter(user => 
+    user.id !== currentUserId && !existingParticipantIds.has(user.id)
+  );
+  
+  if (!userSearch.value.trim()) return filtered;
+  
+  const searchLower = userSearch.value.toLowerCase().trim();
+  return filtered.filter(user => 
+    user.username.toLowerCase().includes(searchLower) ||
+    (user.email && user.email.toLowerCase().includes(searchLower))
+  );
+});
+
+// Select user for add participant
+const selectUserForAdd = (user: UserInfo) => {
+  selectedUserForAdd.value = user;
+  userSearch.value = user.username;
+  showUserDropdown.value = false;
+};
 
 // Computed properties
 const allEvents = computed(() => {
@@ -551,6 +631,11 @@ const openCreateModal = async () => {
   }
 };
 
+const openAddParticipantModal = async () => {
+  await loadUsers();
+  showAddParticipantModal.value = true;
+};
+
 const closeModal = () => {
   showCreateModal.value = false;
   showEditModal.value = false;
@@ -559,6 +644,8 @@ const closeModal = () => {
 
 // Participant management
 const addParticipant = async () => {
+  if (!selectedUserForAdd.value) return;
+  
   try {
     loading.value = true;
     
@@ -567,6 +654,9 @@ const addParticipant = async () => {
       .split(',')
       .map(tag => tag.trim())
       .filter(tag => tag.length > 0);
+
+    // Use selected user ID
+    participantForm.user_id = selectedUserForAdd.value.id;
 
     if (selectedEvent.value) {
       await eventsAPI.addParticipant(selectedEvent.value.id, participantForm);
@@ -633,6 +723,7 @@ const savePaymentUpdate = async () => {
 
 const closeAddParticipantModal = () => {
   showAddParticipantModal.value = false;
+  showUserDropdown.value = false;
   resetParticipantForm();
 };
 
@@ -643,6 +734,8 @@ const closeUpdatePaymentModal = () => {
 };
 
 const resetParticipantForm = () => {
+  selectedUserForAdd.value = null;
+  userSearch.value = '';
   Object.assign(participantForm, {
     user_id: '',
     due_payment: 0,
@@ -651,17 +744,33 @@ const resetParticipantForm = () => {
   participantTagsInput.value = '';
 };
 
+// Handle click outside to close dropdown
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as HTMLElement;
+  if (!target.closest('.select-with-search')) {
+    showUserDropdown.value = false;
+  }
+};
+
 // Lifecycle
 onMounted(async () => {
   try {
     loading.value = true;
-    await eventStore.fetchEvents();
+    await Promise.all([
+      eventStore.fetchEvents(),
+      loadUsers()
+    ]);
+    document.addEventListener('click', handleClickOutside);
   } catch (err) {
     error.value = 'Failed to load events';
     console.error(err);
   } finally {
     loading.value = false;
   }
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
 });
 </script>
 
@@ -914,9 +1023,21 @@ onMounted(async () => {
   padding: 1.5rem;
   border-radius: 8px;
   display: flex;
-  justify-content: space-between;
+  gap: 1.5rem;
   align-items: center;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.participant-card .participant-info {
+  flex: 1;
+}
+
+.participant-card .participant-payment {
+  flex-shrink: 0;
+}
+
+.participant-card .btn-danger {
+  flex-shrink: 0;
 }
 
 .participant-info h4 {
@@ -1024,6 +1145,61 @@ onMounted(async () => {
   outline: none;
   border-color: #1976d2;
   box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
+}
+
+.select-with-search {
+  position: relative;
+}
+
+.search-input {
+  width: 100%;
+}
+
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.dropdown-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.dropdown-item:hover {
+  background-color: #f5f5f5;
+}
+
+.dropdown-item.no-results {
+  color: #999;
+  cursor: default;
+}
+
+.dropdown-item.no-results:hover {
+  background-color: transparent;
+}
+
+.selected-user-display {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: #e3f2fd;
+  border-radius: 6px;
+  color: #1976d2;
+}
+
+.participant-email {
+  font-size: 0.875rem;
+  color: #666;
+  margin: 0.25rem 0 0 0;
 }
 
 .form-row {

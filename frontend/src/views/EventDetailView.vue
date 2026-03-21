@@ -260,12 +260,21 @@
       <div class="participants-section">
         <div class="participants-header">
           <h3>👥 Participants ({{ (event.participants || []).length }})</h3>
-          <button 
-            class="btn-primary"
-            @click="showAddParticipant = true"
-          >
-            Add Participant
-          </button>
+          <div class="participant-actions">
+            <button 
+              v-if="canInviteUsers"
+              class="btn-secondary"
+              @click="showInviteUser = true"
+            >
+              Invite User
+            </button>
+            <button 
+              class="btn-primary"
+              @click="showAddParticipant = true"
+            >
+              Add Participant
+            </button>
+          </div>
         </div>
 
         <div v-if="!event.participants || event.participants.length === 0" class="empty-participants">
@@ -279,7 +288,10 @@
             class="participant-card"
           >
             <div class="participant-header">
-              <h4>{{ participant.user_id }}</h4>
+              <div>
+                <h4>{{ getUsername(participant.user_id) }}</h4>
+                <p class="participant-email">{{ getUserEmail(participant.user_id) }}</p>
+              </div>
               <button 
                 class="btn-danger btn-small"
                 @click="removeParticipant(participant.user_id)"
@@ -506,6 +518,60 @@
             </button>
             <button type="submit" class="btn-primary" :disabled="saving">
               {{ saving ? 'Adding...' : 'Add Participant' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Invite User Modal -->
+    <div v-if="showInviteUser" class="modal-overlay" @click="closeInviteUser">
+      <div class="modal" @click.stop>
+        <h3>Invite User to Event</h3>
+        <p class="modal-subtitle">Search for a user to invite to this private event</p>
+        <form @submit.prevent="inviteUser">
+          <div class="form-group">
+            <label for="inviteUserSearch">Search User</label>
+            <div class="select-with-search">
+              <input 
+                id="inviteUserSearch"
+                v-model="inviteSearch" 
+                type="text" 
+                placeholder="Search by username or email..."
+                class="form-input search-input"
+                @focus="showInviteDropdown = true"
+              />
+              <div v-if="showInviteDropdown && (filteredInviteUsers.length > 0 || inviteSearch)" class="dropdown">
+                <div 
+                  v-for="user in filteredInviteUsers" 
+                  :key="user.id"
+                  class="dropdown-item"
+                  @click="selectInviteUser(user)"
+                >
+                  {{ user.username }} ({{ user.email }})
+                </div>
+                <div v-if="filteredInviteUsers.length === 0 && inviteSearch" class="dropdown-item no-results">
+                  No users found
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="selectedInviteUser" class="selected-user-display">
+            <span>Selected: </span>
+            <strong>{{ selectedInviteUser.username }}</strong>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary" @click="closeInviteUser">
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              class="btn-primary" 
+              :disabled="saving || !selectedInviteUser"
+            >
+              {{ saving ? 'Sending...' : 'Send Invitation' }}
             </button>
           </div>
         </form>
@@ -863,10 +929,12 @@
 import { ref, reactive, onMounted, onUnmounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { eventsAPI, paymentsAPI, expendituresAPI, authAPI } from '@/utils/api';
+import { useAuthStore } from '@/stores/auth';
 import type { Event, Participant, Payment, UserInfo, Expenditure, ExpenditureType } from '@/types';
 
 const route = useRoute();
 const router = useRouter();
+const authStore = useAuthStore();
 
 const event = ref<Event | null>(null);
 const loading = ref(true);
@@ -875,6 +943,7 @@ const error = ref<string | null>(null);
 
 const isEditMode = ref(false);
 const showAddParticipant = ref(false);
+const showInviteUser = ref(false);
 const showPaymentModal = ref(false);
 const showAddPayment = ref(false);
 const showEditPayment = ref(false);
@@ -882,6 +951,10 @@ const showAddExpenditure = ref(false);
 const showEditExpenditure = ref(false);
 const selectedImage = ref<string | null>(null);
 const availableUsers = ref<UserInfo[]>([]);
+
+const inviteSearch = ref('');
+const selectedInviteUser = ref<UserInfo | null>(null);
+const showInviteDropdown = ref(false);
 
 const eventForm = reactive({
   name: '',
@@ -999,6 +1072,16 @@ const loadAvailableUsers = async () => {
   } catch (err) {
     console.error('Failed to load users:', err);
   }
+};
+
+const getUsername = (userId: string): string => {
+  const user = availableUsers.value.find(u => u.id === userId);
+  return user ? user.username : userId;
+};
+
+const getUserEmail = (userId: string): string => {
+  const user = availableUsers.value.find(u => u.id === userId);
+  return user ? user.email : '';
 };
 
 const resetForm = () => {
@@ -1432,6 +1515,67 @@ const closeEditExpenditure = () => {
   });
 };
 
+const canInviteUsers = computed(() => {
+  if (!event.value || !authStore.user) return false;
+  if (authStore.isAdmin) return true;
+  if (event.value.organizers.includes(authStore.user.username)) {
+    return true;
+  }
+  return false;
+});
+
+const filteredInviteUsers = computed(() => {
+  const currentUserId = authStore.user?.id;
+  const participantUserIds = new Set(event.value?.participants.map(p => p.user_id) || []);
+  
+  // Filter out current user and existing participants
+  let availableForInvite = availableUsers.value.filter(user => {
+    const isCurrentUser = user.id === currentUserId;
+    const isParticipant = participantUserIds.has(user.id);
+    return !isCurrentUser && !isParticipant;
+  });
+  
+  // If search is empty, return all available
+  if (!inviteSearch.value.trim()) {
+    return availableForInvite;
+  }
+  
+  // Filter by search term
+  const searchLower = inviteSearch.value.toLowerCase().trim();
+  return availableForInvite.filter(user => 
+    user.username.toLowerCase().includes(searchLower) ||
+    (user.email && user.email.toLowerCase().includes(searchLower))
+  );
+});
+
+const selectInviteUser = (user: UserInfo) => {
+  selectedInviteUser.value = user;
+  inviteSearch.value = user.username;
+  showInviteDropdown.value = false;
+};
+
+const inviteUser = async () => {
+  if (!event.value || !selectedInviteUser.value) return;
+  
+  try {
+    saving.value = true;
+    await eventsAPI.inviteUser(event.value.id, selectedInviteUser.value.id);
+    closeInviteUser();
+  } catch (err) {
+    error.value = 'Failed to send invitation';
+    console.error(err);
+  } finally {
+    saving.value = false;
+  }
+};
+
+const closeInviteUser = () => {
+  showInviteUser.value = false;
+  inviteSearch.value = '';
+  selectedInviteUser.value = null;
+  showInviteDropdown.value = false;
+};
+
 const filteredSenders = computed(() => {
   if (!senderSearch.value) return availableUsers.value;
   return availableUsers.value.filter(user => 
@@ -1490,6 +1634,7 @@ const handleClickOutside = (event: MouseEvent) => {
     showSenderDropdown.value = false;
     showReceiverDropdown.value = false;
     showPayerDropdown.value = false;
+    showInviteDropdown.value = false;
   }
 };
 
@@ -1771,6 +1916,11 @@ onUnmounted(() => {
   margin-bottom: 1.5rem;
 }
 
+.participant-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 .participants-section h3 {
   color: #2c3e50;
   margin: 0;
@@ -1802,6 +1952,19 @@ onUnmounted(() => {
   color: #2c3e50;
   margin: 0;
   font-size: 1.1rem;
+}
+
+.participant-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.participant-email {
+  font-size: 0.875rem;
+  color: #666;
+  margin: 0.25rem 0 0 0;
 }
 
 .participant-body {
@@ -1914,6 +2077,20 @@ onUnmounted(() => {
   gap: 1rem;
   justify-content: flex-end;
   margin-top: 2rem;
+}
+
+.modal-subtitle {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.selected-user-display {
+  background: #e3f2fd;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+  color: #1976d2;
 }
 
 .image-modal-overlay {

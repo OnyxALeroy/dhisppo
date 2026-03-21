@@ -86,3 +86,7 @@ class EventResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class EventInvite(BaseModel):
+    user_id: str = Field(description="ID of the user to invite")

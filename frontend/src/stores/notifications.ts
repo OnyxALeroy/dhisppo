@@ -147,14 +147,14 @@ export const useNotificationStore = defineStore("notifications", () => {
       clearInterval(pollingInterval.value);
     }
     
-    // Poll every 30 seconds for new unread notifications
+    // Poll every 3 seconds for new unread notifications
     pollingInterval.value = setInterval(async () => {
       try {
         await fetchUnreadCount();
       } catch (error) {
         console.error('Error polling unread count:', error);
       }
-    }, 30000);
+    }, 3000);
   };
 
   const stopPolling = () => {

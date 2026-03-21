@@ -142,6 +142,23 @@ async def get_users(
     ]
 
 
+@router.get("/users/list", response_model=list[UserResponse])
+async def get_users_for_organizers(
+    skip: int = 0, limit: int = 100, current_user: dict = Depends(get_organizer_or_admin_user)
+):
+    users = await user_crud.get_users(skip=skip, limit=limit)
+    return [
+        UserResponse(
+            id=str(user["_id"]),
+            email=user["email"],
+            username=user["username"],
+            role=user["role"],
+            created_at=user["created_at"],
+        )
+        for user in users
+    ]
+
+
 @router.patch("/users/{user_id}", response_model=UserResponse)
 async def update_user(
     user_id: str, user_update: UserUpdate, current_user: dict = Depends(get_admin_user)

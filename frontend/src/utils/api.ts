@@ -58,7 +58,7 @@ export const authAPI = {
     api.get("/auth/me").then((res) => res.data),
 
   getUsers: (): Promise<User[]> =>
-    api.get("/auth/users").then((res) => res.data),
+    api.get("/auth/users/list").then((res) => res.data),
 
   updateUser: (userId: string, data: { email?: string; username?: string; role?: string }): Promise<User> =>
     api.patch(`/auth/users/${userId}`, data).then((res) => res.data),
@@ -108,6 +108,12 @@ export const eventsAPI = {
         params: { paid_amount: paidAmount },
       })
       .then((res) => res.data),
+
+  inviteUser: (eventId: string, userId: string): Promise<{ message: string }> =>
+    api.post(`/events/${eventId}/invite`, { user_id: userId }).then((res) => res.data),
+
+  acceptInvitation: (eventId: string): Promise<Event> =>
+    api.post(`/events/invitations/${eventId}/accept`).then((res) => res.data),
 };
 
 export const paymentsAPI = {

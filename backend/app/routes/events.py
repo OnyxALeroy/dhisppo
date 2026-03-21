@@ -3,8 +3,11 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.crud.event import event_crud
+from app.crud.notification import notification_crud
+from app.crud.user import user_crud
 from app.routes.auth import get_current_user_auth, get_organizer_or_admin_user
-from app.schemas.event import EventCreate, EventResponse, EventUpdate, Participant
+from app.schemas.event import EventCreate, EventResponse, EventUpdate, EventInvite, Participant
+from app.schemas.notification import NotificationCreate
 from app.schemas.payment import PaymentInDB
 from app.schemas.user import UserRole
 
@@ -169,11 +172,11 @@ async def update_event(
         )
 
     user_role = current_user.get("role")
-    user_id = str(current_user["_id"])
+    username = current_user["username"]
 
     if not (
         user_role == UserRole.ADMIN
-        or (user_role == UserRole.ORGANIZER and user_id in event.get("organizers", []))
+        or (user_role == UserRole.ORGANIZER and username in event.get("organizers", []))
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -200,8 +203,116 @@ async def update_event(
         notes=updated_event.get("notes", []),
         visibility=updated_event.get("visibility", "public"),
         participants=[
-            Participant(**participant)
-            for participant in updated_event.get("participants", [])
+            Participant(**p)
+            for p in updated_event.get("participants", [])
+        ],
+        payments=[
+            PaymentInDB(**payment)
+            for payment in updated_event.get("payments", [])
+        ],
+        created_at=updated_event["created_at"],
+        updated_at=updated_event.get("updated_at"),
+    )
+
+
+@router.post("/{event_id}/invite", status_code=status.HTTP_201_CREATED)
+async def invite_user_to_event(
+    event_id: str,
+    invite: EventInvite,
+    current_user: dict = Depends(get_current_user_auth)
+):
+    event = await event_crud.get_event_by_id(event_id)
+    if not event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Event not found",
+        )
+
+    user_role = current_user.get("role", "user")
+    username = current_user["username"]
+    organizers = event.get("organizers", [])
+
+    if user_role != "admin" and username not in organizers:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins or organizers can send invitations",
+        )
+
+    target_user = await user_crud.get_user_by_id(invite.user_id)
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    existing_participants = [p.get("user_id") for p in event.get("participants", [])]
+    if invite.user_id in existing_participants:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is already a participant",
+        )
+
+    notification = NotificationCreate(
+        sender_id=str(current_user["_id"]),
+        receiver_id=invite.user_id,
+        content=f"invite:{event_id}:{event.get('name', 'unknown')}",
+    )
+    await notification_crud.create_notification(notification)
+
+    return {"message": f"Invitation sent to user {target_user.get('username', invite.user_id)}"}
+
+
+@router.post("/invitations/{event_id}/accept", response_model=EventResponse)
+async def accept_event_invitation(
+    event_id: str,
+    current_user: dict = Depends(get_current_user_auth)
+):
+    event = await event_crud.get_event_by_id(event_id)
+    if not event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Event not found",
+        )
+
+    user_id = str(current_user["_id"])
+    existing_participants = [p.get("user_id") for p in event.get("participants", [])]
+    
+    if user_id in existing_participants:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You are already a participant",
+        )
+
+    participant = Participant(
+        user_id=user_id,
+        tags=[],
+        due_payment=0,
+        paid_amount=0
+    )
+
+    updated_event = await event_crud.add_participant(event_id, participant)
+    if not updated_event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Event not found",
+        )
+
+    return EventResponse(
+        id=str(updated_event["_id"]),
+        name=updated_event.get("name", ""),
+        organizers=updated_event.get("organizers", []),
+        locations=updated_event.get("locations", []),
+        description=updated_event.get("description", ""),
+        start_date=updated_event["start_date"],
+        end_date=updated_event.get("end_date"),
+        start_time=updated_event["start_time"],
+        end_time=updated_event.get("end_time"),
+        images=updated_event.get("images", []),
+        notes=updated_event.get("notes", []),
+        visibility=updated_event.get("visibility", "public"),
+        participants=[
+            Participant(**p)
+            for p in updated_event.get("participants", [])
         ],
         payments=[
             PaymentInDB(**payment)
@@ -282,14 +393,22 @@ async def delete_participant(
     user_id: str,
     current_user: dict = Depends(get_current_user_auth)
 ):
+    event = await event_crud.get_event_by_id(event_id)
+    if not event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Event not found",
+        )
+    
     username = current_user["username"]
     role = current_user.get("role", "user")
+    organizers = event.get("organizers", [])
     
-    # Only allow users to remove themselves, or admins to remove anyone
-    if role != "admin" and username != user_id:
+    # Allow admins, organizers of the event, or the user removing themselves
+    if role != "admin" and username not in organizers and username != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only remove yourself from an event",
+            detail="You can only remove yourself or be removed by an organizer/admin",
         )
     
     updated_event = await event_crud.remove_participant(event_id, user_id)

@@ -84,7 +84,7 @@ const isAuthenticated = computed(() => authStore.isAuthenticated);
 const isAdmin = computed(() => authStore.isAdmin);
 const isOrganizer = computed(() => authStore.isOrganizer);
 const user = computed(() => authStore.user);
-const unreadCount = computed(() => notificationStore.calculateUnreadCount);
+const unreadCount = computed(() => notificationStore.unreadCount);
 
 const logout = () => {
     authStore.logout();

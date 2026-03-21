@@ -98,7 +98,17 @@
             </div>
           </div>
           <div class="notification-body">
-            <p>{{ notification.content }}</p>
+            <p v-if="notification.content.startsWith('invite:')">
+              You have been invited to join: <strong>{{ getEventName(notification.content) }}</strong>
+            </p>
+            <p v-else>{{ notification.content }}</p>
+            <button 
+              v-if="isInviteNotification(notification) && activeFilter !== 'sent'"
+              @click.stop="handleNotificationClick(notification)"
+              class="btn btn-primary btn-sm accept-btn"
+            >
+              Accept & Join
+            </button>
           </div>
         </div>
         <div v-if="!notification.read && activeFilter !== 'sent'" class="unread-indicator"></div>
@@ -162,11 +172,13 @@
 import { ref, computed, onMounted } from 'vue';
 import { useNotificationStore } from '@/stores/notifications';
 import { useAuthStore } from '@/stores/auth';
+import { useEventStore } from '@/stores/events';
 import { authAPI } from '@/utils/api';
 import type { NotificationCreate } from '@/types';
 
 const notificationStore = useNotificationStore();
 const authStore = useAuthStore();
+const eventStore = useEventStore();
 
 const activeFilter = ref<'all' | 'unread' | 'read' | 'sent'>('all');
 const showSendModal = ref(false);
@@ -219,6 +231,16 @@ const getReceiverName = (receiverId: string) => {
   return user ? user.username : 'Unknown User';
 };
 
+const getEventName = (content: string) => {
+  // Format: invite:{event_id}:{event_name}
+  const parts = content.split(':');
+  return parts.length >= 3 ? parts.slice(2).join(':') : 'Unknown Event';
+};
+
+const isInviteNotification = (notification: any) => {
+  return notification.content.startsWith('invite:');
+};
+
 const markAsRead = async (notificationId: string) => {
   try {
     await notificationStore.markAsRead(notificationId);
@@ -240,6 +262,35 @@ const deleteNotification = async (notificationId: string) => {
     await notificationStore.deleteNotification(notificationId);
   } catch (error) {
     console.error('Error deleting notification:', error);
+  }
+};
+
+const handleNotificationClick = async (notification: any) => {
+  // Check if this is an event invitation
+  if (notification.content.startsWith('invite:')) {
+    const parts = notification.content.split(':');
+    if (parts.length >= 2) {
+      const eventId = parts[1];
+      try {
+        await eventStore.acceptInvitation(eventId);
+        // Try to mark as read, but don't fail if notification is already gone
+        try {
+          await notificationStore.markAsRead(notification.id);
+        } catch (e) {
+          console.warn('Could not mark notification as read:', e);
+        }
+        alert('You have joined the event!');
+      } catch (error) {
+        console.error('Error accepting invitation:', error);
+        alert('Failed to join event. You may already be a participant.');
+      }
+      return;
+    }
+  }
+  
+  // Mark as read for non-invite notifications
+  if (!notification.read) {
+    await notificationStore.markAsRead(notification.id);
   }
 };
 
@@ -501,6 +552,10 @@ onMounted(async () => {
   margin: 0;
   color: #374151;
   line-height: 1.5;
+}
+
+.accept-btn {
+  margin-top: 8px;
 }
 
 .unread-indicator {
