@@ -3,10 +3,10 @@ from typing import TYPE_CHECKING, List, Optional
 
 from bson import ObjectId
 
+from app.core.config import settings
 from app.core.database import get_database
 from app.core.security import get_password_hash, verify_password
 from app.schemas.user import UserCreate, UserRole, UserUpdate
-from app.core.security import verify_password, get_password_hash
 
 if TYPE_CHECKING:
     from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -101,12 +101,16 @@ class UserCRUD:
         return users
 
     async def create_admin_user(self):
+        admin_password = settings.ADMIN_PASSWORD
+        organizer_password = settings.ORGANIZER_PASSWORD
+        if not admin_password or not organizer_password:
+            return
         admin_exists = await self.get_user_by_username("admin")
         if not admin_exists:
             admin_user = UserCreate(
                 username="admin",
                 email="admin@dhisppo.com",
-                password="admin123",
+                password=admin_password,
                 role=UserRole.ADMIN,
             )
             await self.create_user(admin_user)
@@ -115,7 +119,7 @@ class UserCRUD:
             organizer_user = UserCreate(
                 username="organizer",
                 email="organizer@dhisppo.com",
-                password="organizer123",
+                password=organizer_password,
                 role=UserRole.ORGANIZER,
             )
             await self.create_user(organizer_user)

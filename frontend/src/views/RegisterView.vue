@@ -3,7 +3,7 @@
         <div class="register-card">
             <h1 class="register-title">Create Account</h1>
             <p class="register-subtitle">
-                Join us to organize your New Year's resolutions
+                Join us to manage your events
             </p>
 
             <form @submit.prevent="handleRegister" class="register-form">
@@ -89,7 +89,7 @@ const handleRegister = async () => {
     try {
         await authStore.register(form.username, form.email, form.password);
         await authStore.login(form.username, form.password);
-        router.push("/resolutions");
+        router.push("/events");
     } catch (err: any) {
         error.value =
             err.response?.data?.detail ||

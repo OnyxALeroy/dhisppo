@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     SECRET_KEY: Optional[str] = None
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ADMIN_PASSWORD: Optional[str] = None
+    ORGANIZER_PASSWORD: Optional[str] = None
     CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
         "http://localhost:5173",
