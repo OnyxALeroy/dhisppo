@@ -1,0 +1,209 @@
+@use "variables" as *;
+@use "mixins" as *;
+@use "animations" as *;
+
+// Utility classes for global use
+
+// Text utilities
+.text-gradient {
+    @include text-gradient;
+}
+
+.text-primary { color: $primary-600; }
+.text-gray { color: $gray-600; }
+.text-success { color: $success; }
+.text-error { color: $error; }
+.text-warning { color: $warning; }
+
+// Button utilities
+.btn {
+    @include button-base;
+}
+
+.btn-primary {
+    @include button-primary;
+}
+
+.btn-secondary {
+    @include button-secondary;
+}
+
+.btn-ghost {
+    @include button-ghost;
+}
+
+.btn-danger {
+    @include button-danger;
+}
+
+.btn-sm {
+    padding: $spacing-xs $spacing-sm;
+    font-size: $font-size-xs;
+}
+
+.btn-lg {
+    padding: $spacing-md $spacing-xl;
+    font-size: $font-size-base;
+}
+
+// Form utilities
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-md;
+
+    label {
+        color: $gray-700;
+        font-weight: $font-weight-medium;
+        font-size: $font-size-sm;
+    }
+}
+
+.form-input {
+    @include input-base;
+}
+
+.form-input-with-icon {
+    @include input-with-icon;
+
+    .input-icon {
+        position: absolute;
+        left: $spacing-md;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: $font-size-base;
+        color: $gray-400;
+        pointer-events: none;
+    }
+}
+
+.form-error {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    color: $error;
+    background-color: $error-light;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $radius-md;
+    font-size: $font-size-sm;
+    border: 1px solid rgba($error, 0.2);
+}
+
+.form-actions {
+    display: flex;
+    gap: $spacing-md;
+    justify-content: flex-end;
+    margin-top: $spacing-lg;
+    padding-top: $spacing-lg;
+    border-top: 1px solid $gray-200;
+}
+
+// Card utilities
+.card {
+    @include card-base;
+}
+
+.card-hover {
+    @include card-base;
+    @include card-hover;
+}
+
+// Badge utilities
+.badge {
+    @include badge-base;
+}
+
+.badge-primary {
+    @include badge-primary;
+}
+
+.badge-danger {
+    @include badge-danger;
+}
+
+.badge-success {
+    @include badge-base;
+    background: $success-light;
+    color: $success;
+}
+
+// Container utilities
+.container {
+    @include container;
+}
+
+.container-narrow {
+    @include container-narrow;
+}
+
+// Flex utilities
+.flex-center {
+    @include flex-center;
+}
+
+.flex-between {
+    @include flex-between;
+}
+
+.flex-column {
+    @include flex-column;
+}
+
+// Grid utilities
+.grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $spacing-lg;
+}
+
+.grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: $spacing-lg;
+}
+
+// Spacing utilities
+.mt-sm { margin-top: $spacing-sm; }
+.mt-md { margin-top: $spacing-md; }
+.mt-lg { margin-top: $spacing-lg; }
+.mt-xl { margin-top: $spacing-xl; }
+
+.mb-sm { margin-bottom: $spacing-sm; }
+.mb-md { margin-bottom: $spacing-md; }
+.mb-lg { margin-bottom: $spacing-lg; }
+.mb-xl { margin-bottom: $spacing-xl; }
+
+// Animation utilities
+.animate-fade-in-up {
+    @include animate-fadeInUp;
+}
+
+.animate-float {
+    @include animate-float;
+}
+
+.animate-spin {
+    @include animate-spin;
+}
+
+// Scrollbar (if not using global styles)
+.custom-scrollbar {
+    &::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: $gray-100;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: $gray-300;
+        border-radius: 3px;
+
+        &:hover {
+            background: $gray-400;
+        }
+    }
+}

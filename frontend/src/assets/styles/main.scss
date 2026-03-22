@@ -1,0 +1,8 @@
+// Main stylesheet entry point
+// Import order matters: variables first, then others
+
+@use "variables";
+@use "base";
+@use "animations";
+@use "mixins";
+@use "utilities";

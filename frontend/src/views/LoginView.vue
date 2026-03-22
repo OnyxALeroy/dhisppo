@@ -21,7 +21,7 @@
                 <div class="form-group">
                     <label for="username">Username</label>
                     <div class="input-wrapper">
-                        <span class="input-icon">👤</span>
+                        <span class="input-icon"></span>
                         <input
                             id="username"
                             v-model="form.username"
@@ -36,7 +36,7 @@
                 <div class="form-group">
                     <label for="password">Password</label>
                     <div class="input-wrapper">
-                        <span class="input-icon">🔒</span>
+                        <span class="input-icon"></span>
                         <input
                             id="password"
                             v-model="form.password"
@@ -49,7 +49,6 @@
                 </div>
 
                 <div v-if="error" class="error-message">
-                    <span class="error-icon">⚠️</span>
                     {{ error }}
                 </div>
 

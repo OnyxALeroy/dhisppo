@@ -2,7 +2,7 @@
   <div class="event-detail-view">
     <div class="detail-header">
       <button class="btn-back" @click="goBack">
-        ← Back to Events
+        Back to Events
       </button>
       <div class="header-actions">
         <button 
@@ -40,13 +40,13 @@
             <h1 class="event-title">{{ event.name }}</h1>
             <div class="event-meta">
               <span class="meta-item">
-                📅 {{ formatDate(event.start_date) }}
+                {{ formatDate(event.start_date) }}
               </span>
               <span class="meta-item">
-                🕐 {{ event.start_time }} - {{ event.end_time || 'TBD' }}
+                {{ event.start_time }} - {{ event.end_time || 'TBD' }}
               </span>
               <span v-if="event.end_date" class="meta-item">
-                📅 Until: {{ formatDate(event.end_date) }}
+                Until: {{ formatDate(event.end_date) }}
               </span>
             </div>
           </div>
@@ -54,7 +54,7 @@
 
         <div class="event-details-grid">
           <div class="detail-card">
-            <h3>📍 Location</h3>
+            <h3>Location</h3>
             <div class="locations-list">
               <span 
                 v-for="location in event.locations" 
@@ -67,7 +67,7 @@
           </div>
 
           <div class="detail-card">
-            <h3>🎯 Organizers</h3>
+            <h3>Organizers</h3>
             <div class="organizers-list">
               <span 
                 v-for="organizer in event.organizers" 
@@ -80,12 +80,12 @@
           </div>
 
           <div class="detail-card full-width">
-            <h3>📝 Description</h3>
+            <h3>Description</h3>
             <p class="description">{{ event.description }}</p>
           </div>
 
           <div v-if="event.notes.length > 0" class="detail-card full-width">
-            <h3>📋 Notes</h3>
+            <h3>Notes</h3>
             <div class="notes-list">
               <div 
                 v-for="note in event.notes" 
@@ -98,7 +98,7 @@
           </div>
 
           <div v-if="event.images.length > 0" class="detail-card full-width">
-            <h3>🖼️ Images</h3>
+            <h3>Images</h3>
             <div class="images-gallery">
               <img 
                 v-for="image in event.images" 
@@ -258,8 +258,8 @@
 
       <!-- Participants Section (always visible) -->
       <div class="participants-section">
-        <div class="participants-header">
-          <h3>👥 Participants ({{ (event.participants || []).length }})</h3>
+          <div class="participants-header">
+          <h3>Participants ({{ (event.participants || []).length }})</h3>
           <div class="participant-actions">
             <button 
               v-if="canInviteUsers"
@@ -292,7 +292,7 @@
                 <h4>{{ getUserDisplay(participant.user_id).split(' (')[0] }}</h4>
                 <p class="participant-email">{{ getUserEmail(participant.user_id) }}</p>
                 <p class="participant-address" v-if="getUserAddress(participant.user_id)">
-                  📍 {{ getUserAddress(participant.user_id) }}
+                  {{ getUserAddress(participant.user_id) }}
                 </p>
               </div>
               <button 
@@ -325,7 +325,7 @@
                 class="history-toggle"
                 @click="toggleParticipantPayments(participant.user_id)"
               >
-                {{ expandedParticipantId === participant.user_id ? '▼' : '▶' }} 
+                {{ expandedParticipantId === participant.user_id ? '▼' : '▶' }}
                 Payment History ({{ getParticipantPayments(participant.user_id).length }})
               </button>
               
@@ -343,8 +343,8 @@
                       <td>{{ formatDate(payment.created_at) }}</td>
                       <td class="amount">${{ payment.amount.toFixed(2) }}</td>
                       <td class="actions">
-                        <button class="btn-icon" @click="openEditParticipantPayment(payment, participant)" title="Edit">✏️</button>
-                        <button class="btn-icon" @click="deleteParticipantPayment(payment.id, participant)" title="Delete">🗑️</button>
+                        <button class="btn-icon" @click="openEditParticipantPayment(payment, participant)" title="Edit">Edit</button>
+                        <button class="btn-icon" @click="deleteParticipantPayment(payment.id, participant)" title="Delete">Delete</button>
                       </td>
                     </tr>
                   </tbody>
@@ -361,7 +361,7 @@
       <!-- Payment History Section -->
       <div class="payment-history-section">
         <div class="payment-history-header">
-          <h3>💳 Payment History</h3>
+          <h3>Payment History</h3>
           <div class="payment-history-filters">
             <select v-model="selectedHistoryParticipant" class="form-input">
               <option value="">All Participants</option>
@@ -409,8 +409,8 @@
                 <td>{{ payment.receiver.username }}</td>
                 <td class="amount">${{ payment.amount.toFixed(2) }}</td>
                 <td>
-                  <button class="btn-icon" @click="openEditPaymentModal(payment)" title="Edit">✏️</button>
-                  <button class="btn-icon" @click="deletePaymentFromHistory(payment.id)" title="Delete">🗑️</button>
+                  <button class="btn-icon" @click="openEditPaymentModal(payment)" title="Edit">Edit</button>
+                  <button class="btn-icon" @click="deletePaymentFromHistory(payment.id)" title="Delete">Delete</button>
                 </td>
               </tr>
             </tbody>
@@ -421,7 +421,7 @@
       <!-- Expenditures Section (always visible) -->
       <div class="expenditures-section">
         <div class="expenditures-header">
-          <h3>🛒 Expenditures ({{ (event.expenditures || []).length }})</h3>
+          <h3>Expenditures ({{ (event.expenditures || []).length }})</h3>
           <div class="expenditure-summary">
             <span>Total: <strong>${{ totalExpenditures.toFixed(2) }}</strong></span>
             <span class="split-info">(Split {{ allParticipantsCount }} ways: <strong>${{ perPersonDue.toFixed(2) }}</strong>/person)</span>
@@ -947,7 +947,7 @@
     <!-- Image Modal -->
     <div v-if="selectedImage" class="image-modal-overlay" @click="closeImageModal">
       <div class="image-modal" @click.stop>
-        <button class="close-image" @click="closeImageModal">×</button>
+        <button class="close-image" @click="closeImageModal">Close</button>
         <img :src="selectedImage" :alt="event?.name" class="modal-image" />
       </div>
     </div>
@@ -1245,11 +1245,11 @@ const capitalizeFirst = (str: string) => {
 
 const getPaymentStatus = (participant: Participant) => {
   if (participant.paid_amount >= participant.due_payment) {
-    return '✅ Paid in full';
+    return 'Paid in full';
   } else if (participant.paid_amount > 0) {
-    return '⏳ Partially paid';
+    return 'Partially paid';
   }
-  return '❌ Unpaid';
+  return 'Unpaid';
 };
 
 const getPaymentStatusClass = (participant: Participant) => {
@@ -1922,9 +1922,21 @@ onUnmounted(() => {
 
 <style scoped>
 .event-detail-view {
+  min-height: calc(100vh - 60px);
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 3rem 2rem;
+  background: linear-gradient(135deg, var(--primary-50) 0%, var(--white) 100%);
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--gray-200);
+  animation: fadeInUp 0.6s ease-out;
 }
 
 .detail-header {
@@ -1939,11 +1951,17 @@ onUnmounted(() => {
 .btn-back {
   background: none;
   border: none;
-  color: #667eea;
+  color: var(--primary-600);
   font-size: 1rem;
   cursor: pointer;
   padding: 0.5rem;
   text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.btn-back:hover {
+  color: var(--primary-700);
 }
 
 .btn-back:hover {
@@ -1956,12 +1974,13 @@ onUnmounted(() => {
 }
 
 .event-hero {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
   color: white;
   padding: 3rem 2rem;
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   margin-bottom: 2rem;
   text-align: center;
+  box-shadow: var(--shadow-lg);
 }
 
 .event-title {
@@ -1991,11 +2010,11 @@ onUnmounted(() => {
 }
 
 .detail-card {
-  background: white;
+  background: var(--white);
   padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  border: 1px solid #ecf0f1;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--gray-200);
 }
 
 .detail-card.full-width {
@@ -2003,7 +2022,7 @@ onUnmounted(() => {
 }
 
 .detail-card h3 {
-  color: #2c3e50;
+  color: var(--gray-900);
   margin-bottom: 1rem;
   font-size: 1.2rem;
 }
@@ -2043,11 +2062,11 @@ onUnmounted(() => {
 }
 
 .note-item {
-  background: #f8f9fa;
+  background: var(--gray-50);
   padding: 0.8rem 1.2rem;
-  border-radius: 8px;
-  border-left: 4px solid #667eea;
-  color: #2c3e50;
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--primary-500);
+  color: var(--gray-700);
   line-height: 1.5;
 }
 
@@ -2068,15 +2087,16 @@ onUnmounted(() => {
 
 .event-image:hover {
   transform: scale(1.02);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-lg);
 }
 
 .edit-mode {
-  background: white;
+  background: var(--white);
   padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
   margin-bottom: 2rem;
+  animation: fadeInUp 0.6s ease-out;
 }
 
 .form-section {
@@ -2084,10 +2104,10 @@ onUnmounted(() => {
 }
 
 .form-section h3 {
-  color: #2c3e50;
+  color: var(--gray-900);
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #ecf0f1;
+  border-bottom: 1px solid var(--gray-200);
 }
 
 .form-grid {
@@ -2103,7 +2123,7 @@ onUnmounted(() => {
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  color: #2c3e50;
+  color: var(--gray-700);
   font-weight: 500;
 }
 
@@ -2111,17 +2131,17 @@ onUnmounted(() => {
 .form-textarea {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-lg);
   font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: all 0.2s ease;
 }
 
 .form-input:focus,
 .form-textarea:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
 }
 
 .form-textarea {
@@ -2146,24 +2166,30 @@ onUnmounted(() => {
 }
 
 .location-tag {
-  background: #e3f2fd;
-  color: #1976d2;
+  background: var(--primary-50);
+  color: var(--primary-700);
   padding: 0.3rem 0.6rem;
-  border-radius: 12px;
-  font-size: 0.9rem;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
   display: flex;
   align-items: center;
   gap: 0.3rem;
+  border: 1px solid var(--primary-200);
 }
 
 .remove-btn {
   background: none;
   border: none;
-  color: #e74c3c;
+  color: var(--error);
   cursor: pointer;
-  font-size: 1.2rem;
-  padding: 0;
-  line-height: 1;
+  font-size: 0.9rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.remove-btn:hover {
+  background: var(--error-light);
 }
 
 .form-actions {
@@ -2171,14 +2197,21 @@ onUnmounted(() => {
   gap: 1rem;
   justify-content: flex-end;
   padding-top: 1rem;
-  border-top: 1px solid #ecf0f1;
+  border-top: 1px solid var(--gray-200);
 }
 
 .participants-section {
-  background: #f8f9fa;
+  background: var(--gray-50);
   padding: 2rem;
-  border-radius: 12px;
-  border: 1px solid #ecf0f1;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--gray-200);
+}
+
+.participants-section {
+  background: var(--gray-50);
+  padding: 2rem;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--gray-200);
 }
 
 .participants-header {
@@ -2409,12 +2442,22 @@ onUnmounted(() => {
   font-size: 1.3rem;
 }
 
+.payment-history-filters {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 .payment-total {
   background: #27ae60;
   color: white;
   padding: 0.5rem 1rem;
   border-radius: 20px;
   font-size: 1rem;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .payment-total strong {
@@ -2478,8 +2521,9 @@ onUnmounted(() => {
 
 .expenditure-summary {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
   color: #856404;
   background: #fff3cd;
   padding: 0.5rem 1rem;
@@ -2709,6 +2753,17 @@ onUnmounted(() => {
     grid-template-columns: 1fr;
   }
   
+  .payment-history-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .payment-history-filters {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
   .payments-header {
     flex-direction: column;
     gap: 1rem;
@@ -2838,4 +2893,86 @@ onUnmounted(() => {
   opacity: 0.8;
 }
 
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .event-detail-view {
+    padding: 1rem;
+  }
+
+  .event-hero {
+    padding: 2rem 1rem;
+  }
+
+  .event-title {
+    font-size: 1.75rem;
+  }
+
+  .event-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .detail-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .event-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .location-input-group {
+    flex-direction: column;
+  }
+
+  .participants-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .participants-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-history-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .payment-history-filters {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .payments-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .expenditures-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .expenditures-grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

@@ -54,7 +54,7 @@
     </div>
 
     <div v-else-if="!notificationStore.loading && (!filteredNotifications || filteredNotifications.length === 0)" class="empty-state">
-      <div class="empty-icon">📬</div>
+      <div class="empty-icon"></div>
       <h3>No notifications</h3>
       <p v-if="activeFilter === 'unread'">All caught up! No unread notifications.</p>
       <p v-else-if="activeFilter === 'sent'">You haven't sent any notifications yet.</p>
@@ -86,14 +86,14 @@
                 class="btn-icon"
                 title="Mark as read"
               >
-                ✓
+                Read
               </button>
               <button 
                 @click="deleteNotification(notification.id)"
                 class="btn-icon btn-danger"
                 title="Delete notification"
               >
-                ×
+                Delete
               </button>
             </div>
           </div>
@@ -120,7 +120,7 @@
       <div class="modal-content" @click.stop>
         <div class="modal-header">
           <h2>Send Notification</h2>
-          <button @click="closeSendModal" class="btn-icon">×</button>
+          <button @click="closeSendModal" class="btn-icon">Close</button>
         </div>
         <form @submit.prevent="sendNotification" class="modal-body">
           <div class="form-group">
@@ -163,7 +163,7 @@
       class="fab"
       title="Send notification"
     >
-      ✉️
+      Send
     </button>
   </div>
 </template>
@@ -434,13 +434,16 @@ onMounted(async () => {
 
 <style scoped>
 .notifications-container {
+  min-height: calc(100vh - 60px);
   max-width: 800px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 3rem 1.5rem;
+  background: linear-gradient(135deg, var(--primary-50) 0%, var(--white) 100%);
 }
 
 .notifications-header {
   margin-bottom: 24px;
+  animation: fadeInUp 0.6s ease-out;
 }
 
 .header-content {
@@ -454,7 +457,7 @@ onMounted(async () => {
 .page-title {
   font-size: 2rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--gray-900);
   margin: 0;
 }
 
@@ -544,21 +547,30 @@ onMounted(async () => {
 }
 
 .notification-item {
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-xl);
   padding: 16px;
   position: relative;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+  animation: fadeInUp 0.4s ease-out;
 }
 
+.notification-item:nth-child(2) { animation-delay: 0.05s; }
+.notification-item:nth-child(3) { animation-delay: 0.1s; }
+.notification-item:nth-child(4) { animation-delay: 0.15s; }
+.notification-item:nth-child(5) { animation-delay: 0.2s; }
+.notification-item:nth-child(6) { animation-delay: 0.25s; }
+
 .notification-item:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .notification-item.unread {
   background: #f0f9ff;
-  border-color: #3b82f6;
+  border-color: var(--primary-500);
 }
 
 .notification-header {
@@ -615,12 +627,13 @@ onMounted(async () => {
 }
 
 .btn-primary {
-  background: #3b82f6;
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
   color: white;
 }
 
 .btn-primary:hover {
-  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-secondary {
@@ -756,25 +769,24 @@ onMounted(async () => {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #3b82f6;
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
   color: white;
   border: none;
-  font-size: 1.5rem;
+  font-size: 1rem;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-  transition: all 0.2s;
+  box-shadow: var(--shadow-lg);
+  transition: all 0.2s ease;
   z-index: 100;
 }
 
 .fab:hover {
-  background: #2563eb;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(168, 85, 247, 0.4);
 }
 
 @media (max-width: 768px) {
   .notifications-container {
-    padding: 16px;
+    padding: 1rem;
   }
   
   .header-content {
@@ -789,6 +801,17 @@ onMounted(async () => {
   .modal-content {
     width: 95%;
     margin: 20px;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style>

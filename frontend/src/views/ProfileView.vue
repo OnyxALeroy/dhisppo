@@ -16,14 +16,14 @@
                         style="display: none"
                     />
                     <button @click="profilePictureInput?.click()" class="change-pp-btn">
-                        📷 Change
+                        Change
                     </button>
                 </div>
                 <div class="user-details">
                     <div class="user-info-row">
                         <h2 v-if="!isEditing" @click="toggleEdit" class="editable-field">{{ user?.username }}</h2>
                         <input v-else v-model="editForm.username" class="edit-input" @blur="toggleEdit" @keyup.enter="toggleEdit" />
-                        <button @click="toggleEdit" class="edit-btn">{{ isEditing ? '✓' : '✏️' }}</button>
+                        <button @click="toggleEdit" class="edit-btn">{{ isEditing ? 'Save' : 'Edit' }}</button>
                     </div>
                     <p class="user-email">{{ user?.email }}</p>
                     <div class="user-address">
@@ -31,7 +31,7 @@
                             {{ user?.address || 'Click to add address...' }}
                         </p>
                         <textarea v-else v-model="editForm.address" class="edit-textarea" @blur="toggleEditAddress" placeholder="Enter your address"></textarea>
-                        <button @click="toggleEditAddress" class="edit-btn">{{ isEditingAddress ? '✓' : '✏️' }}</button>
+                        <button @click="toggleEditAddress" class="edit-btn">{{ isEditingAddress ? 'Save' : 'Edit' }}</button>
                     </div>
                     <p class="user-role">
                         <span :class="['role-badge', user?.role]">{{
@@ -72,7 +72,6 @@
                 <h3>Payment Summary</h3>
                 <div class="summary-cards">
                     <div class="summary-card total-given">
-                        <div class="card-icon">💸</div>
                         <div class="card-content">
                             <div class="card-label">Total Given</div>
                             <div class="card-amount">
@@ -82,7 +81,6 @@
                     </div>
 
                     <div class="summary-card total-received">
-                        <div class="card-icon">💰</div>
                         <div class="card-content">
                             <div class="card-label">Total Received</div>
                             <div class="card-amount">
@@ -92,7 +90,6 @@
                     </div>
 
                     <div class="summary-card total-spent">
-                        <div class="card-icon">🛒</div>
                         <div class="card-content">
                             <div class="card-label">Total Spent</div>
                             <div class="card-amount">
@@ -141,7 +138,7 @@
 
                         <div class="event-details">
                             <div class="detail-row">
-                                <span class="detail-label">📍 Locations:</span>
+                                <span class="detail-label">Locations:</span>
                                 <div class="detail-value tags">
                                     <span
                                         v-for="location in event.locations"
@@ -154,7 +151,7 @@
                             </div>
 
                             <div class="detail-row">
-                                <span class="detail-label">📅 Dates:</span>
+                                <span class="detail-label">Dates:</span>
                                 <div class="detail-value dates">
                                     <div class="date-item">
                                         From: {{ formatDate(event.start_date) }}
@@ -204,7 +201,7 @@
                                 "
                                 class="dietary-tags"
                             >
-                                <span class="detail-label">🍽️ Dietary:</span>
+                                <span class="detail-label">Dietary:</span>
                                 <div class="detail-value tags">
                                     <span
                                         v-for="tag in getUserParticipant(event)
@@ -240,12 +237,12 @@
             <div class="modal details-modal" @click.stop>
                 <div class="details-header">
                     <h2>{{ selectedEvent.description }}</h2>
-                    <button @click="closeDetails" class="close-btn">×</button>
+                    <button @click="closeDetails" class="close-btn">Close</button>
                 </div>
 
                 <div class="details-content">
                     <div class="detail-section">
-                        <h3>📍 Locations</h3>
+                        <h3>Locations</h3>
                         <div class="tags">
                             <span
                                 v-for="location in selectedEvent.locations"
@@ -258,7 +255,7 @@
                     </div>
 
                     <div class="detail-section">
-                        <h3>📅 Event Schedule</h3>
+                        <h3>Event Schedule</h3>
                         <div class="dates-list">
                             <div class="date-item">
                                 <strong>Starts:</strong>
@@ -282,7 +279,7 @@
                     </div>
 
                     <div class="detail-section">
-                        <h3>👥 Organizers</h3>
+                        <h3>Organizers</h3>
                         <div class="tags">
                             <span
                                 v-for="organizer in selectedEvent.organizers"
@@ -295,7 +292,7 @@
                     </div>
 
                     <div class="detail-section">
-                        <h3>🎫 Your Participation</h3>
+                        <h3>Your Participation</h3>
                         <div
                             v-if="getUserParticipant(selectedEvent)"
                             class="user-participation"
@@ -363,7 +360,7 @@
                         v-if="selectedEvent.notes.length > 0"
                         class="detail-section"
                     >
-                        <h3>📝 Notes</h3>
+                        <h3>Notes</h3>
                         <ul class="notes-list">
                             <li v-for="note in selectedEvent.notes" :key="note">
                                 {{ note }}
@@ -629,29 +626,34 @@ const handleProfilePictureChange = async (event: any) => {
 
 <style scoped>
 .profile-container {
+    min-height: calc(100vh - 60px);
     max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 3rem 2rem;
+    background: linear-gradient(135deg, var(--primary-50) 0%, var(--white) 100%);
 }
 
 .profile-header {
     margin-bottom: 2rem;
+    animation: fadeInUp 0.6s ease-out;
 }
 
 .profile-header h1 {
-    color: #333;
+    color: var(--gray-900);
     margin-bottom: 1.5rem;
+    font-size: 2rem;
+    font-weight: 700;
 }
 
 .user-info-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 16px;
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
+    border-radius: var(--radius-xl);
     padding: 2rem;
     color: white;
     display: flex;
     align-items: center;
     gap: 2rem;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-lg);
 }
 
 .user-avatar {
@@ -871,10 +873,13 @@ const handleProfilePictureChange = async (event: any) => {
 }
 
 .payment-summary {
-    background: white;
-    border-radius: 12px;
+    background: var(--white);
+    border-radius: var(--radius-xl);
     padding: 1.5rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
+    animation: fadeInUp 0.6s ease-out;
+    animation-delay: 0.1s;
+    animation-fill-mode: both;
 }
 
 .payment-summary h3 {
@@ -934,10 +939,13 @@ const handleProfilePictureChange = async (event: any) => {
 }
 
 .my-events {
-    background: white;
-    border-radius: 12px;
+    background: var(--white);
+    border-radius: var(--radius-xl);
     padding: 1.5rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
+    animation: fadeInUp 0.6s ease-out;
+    animation-delay: 0.2s;
+    animation-fill-mode: both;
 }
 
 .my-events h3 {
@@ -988,11 +996,18 @@ const handleProfilePictureChange = async (event: any) => {
 }
 
 .event-card {
-    background: #f8f9fa;
-    border-radius: 12px;
+    background: var(--gray-50);
+    border-radius: var(--radius-xl);
     padding: 1.5rem;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid var(--primary-500);
     transition: all 0.3s ease;
+    border: 1px solid var(--gray-200);
+}
+
+.event-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-200);
 }
 
 .event-card:hover {
@@ -1316,6 +1331,17 @@ const handleProfilePictureChange = async (event: any) => {
 
     .payment-row {
         font-size: 0.9rem;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
 </style>

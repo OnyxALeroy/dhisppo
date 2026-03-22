@@ -3,7 +3,6 @@
         <div class="hero-section">
             <div class="hero-content">
                 <div class="hero-badge">
-                    <span class="badge-icon">🎯</span>
                     <span class="badge-text">Event Management Platform</span>
                 </div>
                 
@@ -21,7 +20,6 @@
                     <template v-if="isAuthenticated">
                         <router-link to="/events" class="cta-btn primary">
                             <span>Explore Events</span>
-                            <span class="btn-arrow">→</span>
                         </router-link>
                         <router-link v-if="isAdmin" to="/admin" class="cta-btn secondary">
                             Admin Dashboard
@@ -30,7 +28,6 @@
                     <template v-else>
                         <router-link to="/register" class="cta-btn primary">
                             <span>Start Creating</span>
-                            <span class="btn-arrow">→</span>
                         </router-link>
                         <router-link to="/login" class="cta-btn secondary">
                             Sign In
@@ -41,15 +38,15 @@
             
             <div class="hero-visual">
                 <div class="floating-card card-1">
-                    <div class="card-icon">📅</div>
+                    <div class="card-icon"></div>
                     <div class="card-text">Event Planning</div>
                 </div>
                 <div class="floating-card card-2">
-                    <div class="card-icon">👥</div>
+                    <div class="card-icon"></div>
                     <div class="card-text">Guest Management</div>
                 </div>
                 <div class="floating-card card-3">
-                    <div class="card-icon">📊</div>
+                    <div class="card-icon"></div>
                     <div class="card-text">Analytics</div>
                 </div>
             </div>
@@ -60,17 +57,17 @@
                 <h2 class="features-title">Everything You Need</h2>
                 <div class="features-grid">
                     <div class="feature-card">
-                        <div class="feature-icon">🎨</div>
+                        <div class="feature-icon"></div>
                         <h3>Beautiful Design</h3>
                         <p>Modern, intuitive interface that makes event planning a pleasure.</p>
                     </div>
                     <div class="feature-card">
-                        <div class="feature-icon">⚡</div>
+                        <div class="feature-icon"></div>
                         <h3>Lightning Fast</h3>
                         <p>Quick setup and real-time updates keep you in control.</p>
                     </div>
                     <div class="feature-card">
-                        <div class="feature-icon">🔒</div>
+                        <div class="feature-icon"></div>
                         <h3>Secure & Reliable</h3>
                         <p>Your data is protected with enterprise-grade security.</p>
                     </div>

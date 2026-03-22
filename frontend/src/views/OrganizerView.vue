@@ -95,13 +95,13 @@
           
           <div class="event-details">
             <p class="event-location">
-              📍 {{ event.locations.join(', ') }}
+              {{ event.locations.join(', ') }}
             </p>
             <p class="event-participants">
-              👥 {{ event.participants.length }} participants
+              {{ event.participants.length }} participants
             </p>
             <p class="event-organizers">
-              🎯 Organized by: {{ event.organizers.join(', ') }}
+              Organized by: {{ event.organizers.join(', ') }}
             </p>
           </div>
 
@@ -127,7 +127,7 @@
     <div v-else class="event-detail">
       <div class="detail-header">
         <button class="btn-back" @click="selectedEvent = null">
-          ← Back to Events
+          Back to Events
         </button>
         <div class="detail-actions">
           <button 
@@ -151,21 +151,21 @@
         <div class="info-grid">
           <div class="info-section">
             <h3>Date & Time</h3>
-            <p>📅 {{ formatDate(selectedEvent.start_date) }}</p>
-            <p>🕐 {{ selectedEvent.start_time }} - {{ selectedEvent.end_time || 'TBD' }}</p>
+            <p>{{ formatDate(selectedEvent.start_date) }}</p>
+            <p>{{ selectedEvent.start_time }} - {{ selectedEvent.end_time || 'TBD' }}</p>
             <p v-if="selectedEvent.end_date">
-              📅 Until: {{ formatDate(selectedEvent.end_date) }}
+              Until: {{ formatDate(selectedEvent.end_date) }}
             </p>
           </div>
 
           <div class="info-section">
             <h3>Location</h3>
-            <p>📍 {{ selectedEvent.locations.join(', ') }}</p>
+            <p>{{ selectedEvent.locations.join(', ') }}</p>
           </div>
 
           <div class="info-section">
             <h3>Organizers</h3>
-            <p>🎯 {{ selectedEvent.organizers.join(', ') }}</p>
+            <p>{{ selectedEvent.organizers.join(', ') }}</p>
           </div>
         </div>
 
@@ -764,22 +764,27 @@ onUnmounted(() => {
 
 <style scoped>
 .organizer-view {
+  min-height: calc(100vh - 60px);
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 3rem 2rem;
+  background: linear-gradient(135deg, var(--primary-50) 0%, var(--white) 100%);
 }
 
 .organizer-header {
   margin-bottom: 2rem;
+  animation: fadeInUp 0.6s ease-out;
 }
 
 .organizer-header h1 {
-  color: #2c3e50;
+  color: var(--gray-900);
   margin-bottom: 0.5rem;
+  font-size: 2rem;
+  font-weight: 700;
 }
 
 .organizer-header p {
-  color: #7f8c8d;
+  color: var(--gray-600);
   font-size: 1.1rem;
 }
 
@@ -849,17 +854,27 @@ onUnmounted(() => {
 }
 
 .event-card {
-  background: white;
-  border-radius: 12px;
+  background: var(--white);
+  border-radius: var(--radius-xl);
   padding: 1.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all 0.3s ease;
+  border: 1px solid var(--gray-200);
+  border-left: 4px solid var(--primary-500);
+  animation: fadeInUp 0.6s ease-out;
 }
 
+.event-card:nth-child(2) { animation-delay: 0.1s; }
+.event-card:nth-child(3) { animation-delay: 0.2s; }
+.event-card:nth-child(4) { animation-delay: 0.3s; }
+.event-card:nth-child(5) { animation-delay: 0.4s; }
+.event-card:nth-child(6) { animation-delay: 0.5s; }
+
 .event-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-200);
 }
 
 .event-header {
@@ -1233,18 +1248,21 @@ onUnmounted(() => {
 
 /* Button styles */
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
-  border-radius: 6px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
   font-size: 1rem;
-  transition: opacity 0.2s;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover:not(:disabled) {
-  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-primary:disabled {
@@ -1253,33 +1271,36 @@ onUnmounted(() => {
 }
 
 .btn-secondary {
-  background: #ecf0f1;
-  color: #2c3e50;
-  border: none;
+  background: transparent;
+  color: var(--primary-600);
+  border: 2px solid var(--primary-200);
   padding: 0.75rem 1.5rem;
-  border-radius: 6px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
   font-size: 1rem;
-  transition: background 0.2s;
+  font-weight: 600;
+  transition: all 0.2s ease;
 }
 
 .btn-secondary:hover {
-  background: #d5dbdd;
+  background: var(--primary-50);
+  border-color: var(--primary-300);
 }
 
 .btn-danger {
-  background: #e74c3c;
+  background: var(--error);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
-  border-radius: 6px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
   font-size: 1rem;
-  transition: opacity 0.2s;
+  font-weight: 600;
+  transition: all 0.2s ease;
 }
 
 .btn-danger:hover {
-  opacity: 0.9;
+  background: #dc2626;
 }
 
 .btn-small {
@@ -1347,6 +1368,17 @@ onUnmounted(() => {
   .participant-payment {
     margin: 0;
     text-align: left;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style>

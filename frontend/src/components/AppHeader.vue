@@ -12,7 +12,7 @@
                 <template v-if="isAuthenticated">
                     <div class="nav-link-container">
                         <router-link to="/notifications" class="nav-link">
-                            <span>🔔</span>
+                            <span class="bell-icon">🔔</span>
                             <span
                                 v-if="unreadCount && unreadCount > 0"
                                 class="notification-badge"

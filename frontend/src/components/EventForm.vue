@@ -74,7 +74,7 @@
                                 class="location-tag"
                             >
                                 {{ loc }}
-                                <button type="button" class="remove-btn" @click="removeLocation(index)">×</button>
+                                <button type="button" class="remove-btn" @click="removeLocation(index)">Remove</button>
                             </span>
                         </div>
                     </template>
@@ -379,7 +379,7 @@ form {
 
 .form-column.right {
     padding-left: 1rem;
-    border-left: 1px solid #e1e5e9;
+    border-left: 1px solid var(--gray-200);
 }
 
 .form-row-group {
@@ -395,7 +395,7 @@ form {
 .form-group label {
     display: block;
     margin-bottom: 0.5rem;
-    color: #333;
+    color: var(--gray-700);
     font-weight: 500;
 }
 
@@ -408,10 +408,10 @@ form {
 .form-group select {
     width: 100%;
     padding: 0.75rem;
-    border: 2px solid #e1e5e9;
-    border-radius: 8px;
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-lg);
     font-size: 1rem;
-    transition: border-color 0.3s ease;
+    transition: border-color 0.2s ease;
     box-sizing: border-box;
 }
 
@@ -424,7 +424,8 @@ form {
 .form-group input:focus,
 .form-group select:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
 }
 
 .modal-actions {
@@ -433,36 +434,37 @@ form {
     justify-content: flex-end;
     margin-top: 1.5rem;
     padding-top: 1rem;
-    border-top: 1px solid #e1e5e9;
+    border-top: 1px solid var(--gray-200);
 }
 
 .cancel-btn {
     padding: 0.75rem 1.5rem;
-    border: 1px solid #ddd;
-    background: white;
-    border-radius: 8px;
+    border: 1px solid var(--gray-300);
+    background: var(--white);
+    border-radius: var(--radius-lg);
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all 0.2s ease;
     font-size: 1rem;
 }
 
 .cancel-btn:hover {
-    background: #f8f9fa;
+    background: var(--gray-100);
 }
 
 .submit-btn {
     padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
+    color: var(--white);
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-lg);
     cursor: pointer;
-    transition: transform 0.3s ease, opacity 0.3s ease;
+    transition: all 0.2s ease;
     font-size: 1rem;
 }
 
 .submit-btn:hover:not(:disabled) {
     transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
 }
 
 .location-input-row {
@@ -476,17 +478,17 @@ form {
 
 .btn-secondary {
     padding: 0.5rem 1rem;
-    border: 1px solid #ddd;
-    background: white;
-    border-radius: 6px;
+    border: 1px solid var(--gray-300);
+    background: var(--white);
+    border-radius: var(--radius-md);
     cursor: pointer;
     font-size: 0.9rem;
     white-space: nowrap;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
 }
 
 .btn-secondary:hover {
-    background: #f0f0f0;
+    background: var(--gray-100);
 }
 
 .locations-list {
@@ -497,20 +499,21 @@ form {
 }
 
 .location-tag {
-    background: #e3f2fd;
-    color: #1976d2;
+    background: var(--primary-50);
+    color: var(--primary-700);
     padding: 0.3rem 0.6rem;
-    border-radius: 12px;
+    border-radius: var(--radius-full);
     font-size: 0.85rem;
     display: flex;
     align-items: center;
     gap: 0.3rem;
+    border: 1px solid var(--primary-200);
 }
 
 .remove-btn {
     background: none;
     border: none;
-    color: #1976d2;
+    color: var(--primary-600);
     cursor: pointer;
     padding: 0;
     font-size: 1rem;
@@ -518,7 +521,7 @@ form {
 }
 
 .remove-btn:hover {
-    color: #d32f2f;
+    color: var(--error);
 }
 
 .submit-btn:disabled {

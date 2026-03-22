@@ -83,7 +83,6 @@
 
                 <div class="event-schedule">
                     <div class="schedule-compact">
-                        <span class="schedule-icon">📅</span>
                         <span class="schedule-text">
                             {{ formatDate(event.start_date) }}
                             <span
@@ -97,7 +96,6 @@
                         </span>
                     </div>
                     <div class="schedule-compact">
-                        <span class="schedule-icon">⏰</span>
                         <span class="schedule-text">
                             {{ formatTime(event.start_time) }}
                             <span v-if="event.end_time"
@@ -109,7 +107,7 @@
 
                 <div class="event-content">
                     <div class="event-section">
-                        <h4>📍 Locations</h4>
+                        <h4>Locations</h4>
                         <div class="tags">
                             <span
                                 v-for="location in event.locations"
@@ -122,7 +120,7 @@
                     </div>
 
                     <div class="event-section">
-                        <h4>👥 Organizers</h4>
+                        <h4>Organizers</h4>
                         <div class="tags">
                             <span
                                 v-for="organizer in event.organizers"
@@ -139,7 +137,7 @@
                         class="event-section"
                     >
                         <h4>
-                            🎫 Participants ({{ event.participants.length }})
+                            Participants ({{ event.participants.length }})
                         </h4>
                         <div class="participants-summary">
                             <span
@@ -156,7 +154,7 @@
                     </div>
 
                     <div v-if="event.notes.length > 0" class="event-section">
-                        <h4>📝 Notes</h4>
+                        <h4>Notes</h4>
                         <ul class="notes-list">
                             <li
                                 v-for="note in event.notes.slice(0, 2)"
@@ -377,12 +375,12 @@
                     <p class="event-description">
                         {{ selectedEvent.description }}
                     </p>
-                    <button @click="closeDetails" class="close-btn">×</button>
+                    <button @click="closeDetails" class="close-btn">Close</button>
                 </div>
 
                 <div class="details-content">
                     <div class="detail-section">
-                        <h3>📅 Event Schedule</h3>
+                        <h3>Event Schedule</h3>
                         <div class="schedule-info">
                             <div class="schedule-row">
                                 <span class="schedule-label">Start:</span>
@@ -420,7 +418,7 @@
                     </div>
 
                     <div class="detail-section">
-                        <h3>📍 Locations</h3>
+                        <h3>Locations</h3>
                         <div class="tags">
                             <span
                                 v-for="location in selectedEvent.locations"
@@ -433,7 +431,7 @@
                     </div>
 
                     <div class="detail-section">
-                        <h3>👥 Organizers</h3>
+                        <h3>Organizers</h3>
                         <div class="tags">
                             <span
                                 v-for="organizer in selectedEvent.organizers"
@@ -447,7 +445,7 @@
 
                     <div class="detail-section">
                         <h3>
-                            🎫 Participants ({{
+                            Participants ({{
                                 selectedEvent.participants.length
                             }})
                         </h3>
@@ -523,7 +521,7 @@
                         v-if="selectedEvent.notes.length > 0"
                         class="detail-section"
                     >
-                        <h3>📝 Notes</h3>
+                        <h3>Notes</h3>
                         <ul class="notes-list">
                             <li v-for="note in selectedEvent.notes" :key="note">
                                 {{ note }}
@@ -535,7 +533,7 @@
                         v-if="selectedEvent.images.length > 0"
                         class="detail-section"
                     >
-                        <h3>🖼️ Images</h3>
+                        <h3>Images</h3>
                         <div class="images-grid">
                             <div
                                 v-for="image in selectedEvent.images"
@@ -869,13 +867,16 @@ watch(editNotesText, (newText) => {
 
 <style scoped>
 .events-container {
+    min-height: calc(100vh - 60px);
     max-width: 1280px;
     margin: 0 auto;
-    padding: 2rem 1.5rem;
+    padding: 3rem 1.5rem;
+    background: linear-gradient(135deg, var(--primary-50) 0%, var(--white) 100%);
 }
 
 .events-header {
     margin-bottom: 2rem;
+    animation: fadeInUp 0.6s ease-out;
 }
 
 .events-header h1 {
@@ -946,6 +947,8 @@ watch(editNotesText, (newText) => {
     background: var(--white);
     border-radius: var(--radius-xl);
     border: 1px solid var(--gray-200);
+    box-shadow: var(--shadow-md);
+    animation: fadeInUp 0.6s ease-out;
 }
 
 .error {
@@ -982,7 +985,14 @@ watch(editNotesText, (newText) => {
     transition: all 0.3s ease;
     border: 1px solid var(--gray-200);
     border-left: 4px solid var(--primary-500);
+    animation: fadeInUp 0.6s ease-out;
 }
+
+.event-card:nth-child(2) { animation-delay: 0.1s; }
+.event-card:nth-child(3) { animation-delay: 0.2s; }
+.event-card:nth-child(4) { animation-delay: 0.3s; }
+.event-card:nth-child(5) { animation-delay: 0.4s; }
+.event-card:nth-child(6) { animation-delay: 0.5s; }
 
 .event-card:hover {
     transform: translateY(-2px);
@@ -1564,6 +1574,17 @@ watch(editNotesText, (newText) => {
 
     .payment-info {
         text-align: left;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
 </style>

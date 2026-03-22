@@ -86,13 +86,29 @@
                             <td>{{ formatDate(user.created_at) }}</td>
                             <td>
                                 <div class="action-buttons">
-                                    <button 
+                                    <button
                                         v-if="editingUser?.id === user.id"
-                                        @click="saveUser" 
+                                        @click="saveUser"
                                         class="save-btn"
                                         title="Save"
                                     >
-                                        ✓
+                                        Save
+                                    </button>
+                                    <button
+                                        v-if="editingUser?.id === user.id"
+                                        @click="cancelEditUser"
+                                        class="cancel-btn"
+                                        title="Cancel"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        v-else
+                                        @click="deleteUser(user.id)"
+                                        class="delete-btn"
+                                        title="Delete User"
+                                    >
+                                        Delete
                                     </button>
                                     <button 
                                         v-if="editingUser?.id === user.id"
@@ -108,7 +124,7 @@
                                         class="delete-btn"
                                         title="Delete User"
                                     >
-                                        🗑
+                                        Delete
                                     </button>
                                 </div>
                             </td>
@@ -220,13 +236,29 @@
                             <td>{{ event.participants.length }}</td>
                             <td>
                                 <div class="action-buttons">
-                                    <button 
+                                    <button
                                         v-if="editingEvent?.id === event.id"
-                                        @click="saveEvent" 
+                                        @click="saveEvent"
                                         class="save-btn"
                                         title="Save"
                                     >
-                                        ✓
+                                        Save
+                                    </button>
+                                    <button
+                                        v-if="editingEvent?.id === event.id"
+                                        @click="cancelEditEvent"
+                                        class="cancel-btn"
+                                        title="Cancel"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        v-else
+                                        @click="deleteEvent(event.id)"
+                                        class="delete-btn"
+                                        title="Delete Event"
+                                    >
+                                        Delete
                                     </button>
                                     <button 
                                         v-if="editingEvent?.id === event.id"
@@ -242,7 +274,7 @@
                                         class="delete-btn"
                                         title="Delete Event"
                                     >
-                                        🗑
+                                        Delete
                                     </button>
                                 </div>
                             </td>
@@ -561,28 +593,33 @@ const closeCreateEventModal = () => {
 
 <style scoped>
 .admin-container {
+    min-height: calc(100vh - 60px);
     max-width: 1600px;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 3rem 2rem;
+    background: linear-gradient(135deg, var(--primary-50) 0%, var(--white) 100%);
 }
 
 .admin-container h1 {
-    color: #333;
+    color: var(--gray-900);
     margin-bottom: 2rem;
+    font-size: 2rem;
+    font-weight: 700;
+    animation: fadeInUp 0.6s ease-out;
 }
 
 .admin-tabs {
     display: flex;
     gap: 0.5rem;
     margin-bottom: 2rem;
-    border-bottom: 2px solid #e1e5e9;
+    border-bottom: 2px solid var(--gray-200);
 }
 
 .tab-btn {
     padding: 1rem 1.5rem;
     border: none;
     background: transparent;
-    color: #666;
+    color: var(--gray-600);
     cursor: pointer;
     font-size: 1rem;
     font-weight: 500;
@@ -592,12 +629,12 @@ const closeCreateEventModal = () => {
 }
 
 .tab-btn.active {
-    color: #667eea;
-    border-bottom-color: #667eea;
+    color: var(--primary-600);
+    border-bottom-color: var(--primary-600);
 }
 
 .tab-btn:hover {
-    color: #667eea;
+    color: var(--primary-600);
 }
 
 .tab-content {
@@ -612,23 +649,26 @@ const closeCreateEventModal = () => {
 }
 
 .tab-header h2 {
-    color: #333;
+    color: var(--gray-900);
     margin: 0;
 }
 
 .create-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
     color: white;
     border: none;
     padding: 0.75rem 1.5rem;
-    border-radius: 8px;
+    border-radius: var(--radius-lg);
     cursor: pointer;
     font-size: 0.9rem;
-    transition: transform 0.3s ease;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
 }
 
 .create-btn:hover {
     transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 .loading,
@@ -671,14 +711,14 @@ const closeCreateEventModal = () => {
 
 .users-table th,
 .events-table th {
-    background: #f8f9fa;
+    background: var(--gray-50);
     font-weight: 600;
-    color: #333;
+    color: var(--gray-900);
 }
 
 .users-table tr:hover,
 .events-table tr:hover {
-    background: #f8f9fa;
+    background: var(--gray-50);
 }
 
 .editable-field {
@@ -822,7 +862,7 @@ const closeCreateEventModal = () => {
 
 .modal h2 {
     margin-top: 0;
-    color: #333;
+    color: var(--gray-900);
 }
 
 .form-group {
@@ -832,7 +872,7 @@ const closeCreateEventModal = () => {
 .form-group label {
     display: block;
     margin-bottom: 0.5rem;
-    color: #333;
+    color: var(--gray-700);
     font-weight: 500;
 }
 
@@ -841,10 +881,10 @@ const closeCreateEventModal = () => {
 .form-group select {
     width: 100%;
     padding: 0.75rem;
-    border: 2px solid #e1e5e9;
-    border-radius: 8px;
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-lg);
     font-size: 1rem;
-    transition: border-color 0.3s ease;
+    transition: all 0.2s ease;
     box-sizing: border-box;
 }
 
@@ -852,7 +892,8 @@ const closeCreateEventModal = () => {
 .form-group textarea:focus,
 .form-group select:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
 }
 
 .modal-actions {
@@ -864,29 +905,35 @@ const closeCreateEventModal = () => {
 
 .cancel-btn {
     padding: 0.75rem 1.5rem;
-    border: 1px solid #ddd;
-    background: white;
-    border-radius: 8px;
+    border: 2px solid var(--gray-300);
+    background: transparent;
+    color: var(--gray-700);
+    border-radius: var(--radius-lg);
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    font-weight: 600;
+    transition: all 0.2s ease;
 }
 
 .cancel-btn:hover {
-    background: #f8f9fa;
+    background: var(--gray-50);
+    border-color: var(--gray-400);
 }
 
 .submit-btn {
     padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-lg);
     cursor: pointer;
-    transition: transform 0.3s ease;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
 }
 
 .submit-btn:hover {
     transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 @keyframes fadeIn {
@@ -926,6 +973,17 @@ const closeCreateEventModal = () => {
 
     .modal {
         padding: 1rem;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
 </style>
